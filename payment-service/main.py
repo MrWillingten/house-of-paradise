@@ -76,8 +76,9 @@ def create_payment(payment: PaymentCreate):
     db = SessionLocal()
     try:
         transaction_id = f"TXN-{random.randint(100000, 999999)}-{datetime.utcnow().timestamp()}"
-        
-        status = "completed" if random.random() > 0.1 else "failed"
+
+        # Always complete payment (removed 10% random failure for demo purposes)
+        status = "completed"
         
         db_payment = Payment(
             user_id=payment.user_id,
