@@ -157,11 +157,25 @@ function Account() {
       });
 
       if (!fetchResponse.ok) {
-        const errorData = await fetchResponse.json();
-        throw new Error(errorData.error || errorData.message || 'Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = await fetchResponse.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // Response body might be empty or not JSON
+          errorMessage = `Upload failed with status ${fetchResponse.status}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const response = { data: await fetchResponse.json() };
+      let responseData;
+      try {
+        responseData = await fetchResponse.json();
+      } catch (e) {
+        throw new Error('Invalid response from server');
+      }
+
+      const response = { data: responseData };
 
       // Update user with the backend image URL
       const updatedUser = { ...user, profileImage: response.data.data.imageUrl };

@@ -10,7 +10,12 @@ import io from 'socket.io-client';
 // WebSocket URL - use hotel service directly for WebSocket connections
 // In production (Render free tier), WebSockets are not reliably supported
 const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3001';
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REACT_APP_API_URL;
+
+// Check if we're in production - multiple ways to detect
+const IS_PRODUCTION =
+  process.env.NODE_ENV === 'production' ||
+  !!process.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost');
 
 class HotelWebSocketService {
   constructor() {
