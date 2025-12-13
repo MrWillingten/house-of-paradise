@@ -86,51 +86,34 @@ app.use('/public/images', express.static(path.join(__dirname, 'public/images'), 
   }
 }));
 
-// Serve uploaded profile images - direct proxy WITHOUT security headers
-app.get('/uploads/profile-images/:filename', (req, res) => {
-  const http = require('http');
+// Serve uploaded profile images - proxy to auth service
+app.get('/uploads/profile-images/:filename', async (req, res) => {
+  try {
+    const axios = require('axios');
+    const imageUrl = `${AUTH_SERVICE}/uploads/profile-images/${req.params.filename}`;
 
-  const proxyReq = http.request(
-    {
-      hostname: AUTH_SERVICE.includes('localhost') ? 'localhost' : 'auth-service',
-      port: 3004,
-      path: `/uploads/profile-images/${req.params.filename}`,
-      method: 'GET',
-      headers: {
-        'User-Agent': req.headers['user-agent'] || 'API-Gateway-Proxy'
-      }
-    },
-    (proxyRes) => {
-      // Set status code
-      res.statusCode = proxyRes.statusCode;
+    const response = await axios.get(imageUrl, {
+      responseType: 'stream',
+      timeout: 10000
+    });
 
-      // Only copy content-type and content-length from auth-service
-      if (proxyRes.headers['content-type']) {
-        res.setHeader('Content-Type', proxyRes.headers['content-type']);
-      }
-      if (proxyRes.headers['content-length']) {
-        res.setHeader('Content-Length', proxyRes.headers['content-length']);
-      }
-
-      // Set headers to allow cross-origin image loading
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-      res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
-
-      // Stream the image data
-      proxyRes.pipe(res, { end: true });
+    // Set headers
+    res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
     }
-  );
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
-  proxyReq.on('error', (error) => {
-    console.error('Profile image fetch error:', error);
+    // Stream the image
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('Profile image fetch error:', error.message);
     if (!res.headersSent) {
       res.status(404).json({ success: false, error: 'Image not found' });
     }
-  });
-
-  proxyReq.end();
+  }
 });
 
 // Upload profile image - BEFORE security middleware to avoid body parsing interference
