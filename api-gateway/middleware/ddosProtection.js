@@ -333,6 +333,8 @@ const corsOptions = {
       'https://hop-api-gateway.onrender.com',
       'https://houseofparadise.com',
       'https://www.houseofparadise.com',
+      'https://house-of-paradise.vercel.app',
+      'https://house-of-paradise-mrwillingtens-projects.vercel.app',
     ];
 
     if (allowedOrigins.includes(normalizedOrigin)) {
