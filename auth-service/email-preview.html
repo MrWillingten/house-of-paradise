@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Verify Your Email - N1 Travels</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #f3f4f6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            animation: drift 20s linear infinite;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translate(0, 0);
+            }
+            to {
+                transform: translate(30px, 30px);
+            }
+        }
+
+        .logo {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo h1 {
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: -0.5px;
+        }
+
+        .logo p {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .icon-container {
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .content {
+            padding: 48px 40px;
+        }
+
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+
+        .message {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .code-container {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #93c5fd;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin: 32px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .code-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0369a1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .verification-code {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0c4a6e;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 16px 0;
+            user-select: all;
+            -webkit-user-select: all;
+            -moz-user-select: all;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .code-hint {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 16px;
+        }
+
+        .expiry-notice {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+
+        .expiry-notice p {
+            font-size: 14px;
+            color: #92400e;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .expiry-notice .icon-warning {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .security-notice {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+
+        .security-notice h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .security-notice ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .security-notice li {
+            margin-bottom: 8px;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .cta-text {
+            font-size: 15px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .footer {
+            background-color: #f9fafb;
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .footer-links {
+            margin-bottom: 20px;
+        }
+
+        .footer-link {
+            color: #0284c7;
+            text-decoration: none;
+            font-size: 14px;
+            margin: 0 12px;
+            font-weight: 500;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        .social-icons {
+            margin: 20px 0;
+        }
+
+        .social-icon {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            margin: 0 8px;
+            background-color: #e2e8f0;
+            border-radius: 50%;
+            line-height: 36px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+
+        .copyright {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 16px;
+        }
+
+        .trust-badges {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .trust-badge {
+            display: inline-block;
+            font-size: 11px;
+            color: #94a3b8;
+            margin: 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 32px 24px;
+            }
+
+            .header {
+                padding: 32px 24px;
+            }
+
+            .greeting {
+                font-size: 20px;
+            }
+
+            .message {
+                font-size: 15px;
+            }
+
+            .verification-code {
+                font-size: 36px;
+                letter-spacing: 4px;
+            }
+
+            .footer {
+                padding: 24px 20px;
+            }
+
+            .footer-link {
+                display: block;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <h1>✈️ N1 Travels</h1>
+                <p>World's #1 Booking Platform</p>
+            </div>
+            <div class="icon-container">
+                <div class="icon">
+                    📧
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h2 class="greeting">Hello Test User,</h2>
+            <p class="message">Thank you for joining N1 Travels - the world's #1 travel booking platform. To get started, please verify your email address.</p>
+
+            <!-- Verification Code Box -->
+            <div class="code-container">
+                <div class="code-label">Your Verification Code</div>
+                <div class="verification-code">ABC123</div>
+                <div class="code-hint">Click to select and copy</div>
+            </div>
+
+            <!-- Expiry Notice -->
+            <div class="expiry-notice">
+                <p>
+                    <span class="icon-warning">⏱️</span>
+                    <strong>This code will expire in 15 minutes.</strong> Please use it soon to verify your account.
+                </p>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <h3>🔒 Security Tips</h3>
+                <ul>
+                    <li>Never share this code with anyone</li>
+                    <li>N1 Travels will never ask for this code via phone or email</li>
+                    <li>If you didn't request this code, please ignore this email</li>
+                    <li>Your account security is important to us</li>
+                </ul>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="cta-section">
+                <p class="cta-text">
+                    After verification, you'll have access to thousands of amazing travel destinations worldwide!
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="#" class="footer-link">Help Center</a>
+                <a href="#" class="footer-link">Contact Us</a>
+                <a href="#" class="footer-link">Privacy Policy</a>
+            </div>
+
+            <div class="social-icons">
+                <a href="#" class="social-icon">f</a>
+                <a href="#" class="social-icon">t</a>
+                <a href="#" class="social-icon">in</a>
+                <a href="#" class="social-icon">ig</a>
+            </div>
+
+            <p class="copyright">
+                © 2025 N1 Travels. All rights reserved.<br>
+                Your trusted partner for unforgettable journeys.
+            </p>
+
+            <div class="trust-badges">
+                <span class="trust-badge">🔒 Secure</span>
+                <span class="trust-badge">✓ Verified</span>
+                <span class="trust-badge">🌍 Global</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

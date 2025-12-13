@@ -1,0 +1,103 @@
+# Render Blueprint - House of Paradise Microservices
+# Deploy all services with: render blueprint sync
+
+services:
+  # Auth Service
+  - type: web
+    name: hop-auth-service
+    runtime: node
+    rootDir: auth-service
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://aminzou54_db_user:GIAKXlmboXdZ31F9@microservicesmongodb.ktah2ws.mongodb.net/authdb?retryWrites=true&w=majority
+      - key: JWT_SECRET
+        value: HoP-Travel-Production-JWT-Secret-2024-SuperSecure-64chars-min-change-me
+      - key: PORT
+        value: 3004
+      - key: FRONTEND_URL
+        fromService:
+          name: hop-frontend
+          type: web
+          property: host
+      - key: API_GATEWAY_URL
+        fromService:
+          name: hop-api-gateway
+          type: web
+          property: host
+
+  # Hotel Service
+  - type: web
+    name: hop-hotel-service
+    runtime: node
+    rootDir: hotel-service
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGO_URI
+        value: mongodb+srv://aminzou54_db_user:GIAKXlmboXdZ31F9@microservicesmongodb.ktah2ws.mongodb.net/hoteldb?retryWrites=true&w=majority
+      - key: PORT
+        value: 3001
+
+  # Payment Service
+  - type: web
+    name: hop-payment-service
+    runtime: python
+    rootDir: payment-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres.jzgpccyyqtgslkgomljz:Amin-Zou_45@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+      - key: PORT
+        value: 3003
+
+  # Trip Service
+  - type: web
+    name: hop-trip-service
+    runtime: docker
+    rootDir: trip-service
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres.jzgpccyyqtgslkgomljz
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: Amin-Zou_45
+      - key: PORT
+        value: 3002
+
+  # API Gateway
+  - type: web
+    name: hop-api-gateway
+    runtime: node
+    rootDir: api-gateway
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JWT_SECRET
+        value: HoP-Travel-Production-JWT-Secret-2024-SuperSecure-64chars-min-change-me
+      - key: HOTEL_SERVICE_URL
+        fromService:
+          name: hop-hotel-service
+          type: web
+          property: host
+      - key: TRIP_SERVICE_URL
+        fromService:
+          name: hop-trip-service
+          type: web
+          property: host
+      - key: PAYMENT_SERVICE_URL
+        fromService:
+          name: hop-payment-service
+          type: web
+          property: host
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: hop-auth-service
+          type: web
+          property: host

@@ -1,0 +1,229 @@
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
+
+/**
+ * Universal AI Service
+ * Supports both Google Gemini and OpenAI GPT models
+ */
+class AIService {
+  constructor() {
+    // Initialize Gemini
+    this.geminiApiKey = process.env.GEMINI_API_KEY;
+    this.gemini = this.geminiApiKey ? new GoogleGenerativeAI(this.geminiApiKey) : null;
+
+    // Initialize OpenAI
+    this.openaiApiKey = process.env.OPENAI_API_KEY;
+    this.openai = this.openaiApiKey ? new OpenAI({ apiKey: this.openaiApiKey }) : null;
+
+    // Available models
+    this.models = {
+      // Gemini models
+      'gemini-2.0-flash': { provider: 'gemini', name: 'gemini-2.0-flash-exp' },
+      'gemini-1.5-pro': { provider: 'gemini', name: 'gemini-1.5-pro-latest' },
+      'gemini-1.5-flash': { provider: 'gemini', name: 'gemini-1.5-flash-latest' },
+
+      // OpenAI models
+      'gpt-4': { provider: 'openai', name: 'gpt-4' },
+      'gpt-4-turbo': { provider: 'openai', name: 'gpt-4-turbo-preview' },
+      'gpt-3.5-turbo': { provider: 'openai', name: 'gpt-3.5-turbo' },
+    };
+  }
+
+  /**
+   * Generate text using specified AI model
+   * @param {string} prompt - The prompt to send to the AI
+   * @param {string} modelKey - Model key from this.models
+   * @param {object} options - Additional options
+   * @returns {Promise<string>} Generated text
+   */
+  async generateText(prompt, modelKey = 'gemini-2.0-flash', options = {}) {
+    const model = this.models[modelKey];
+
+    if (!model) {
+      throw new Error(`Unknown model: ${modelKey}. Available models: ${Object.keys(this.models).join(', ')}`);
+    }
+
+    if (model.provider === 'gemini') {
+      return await this.generateWithGemini(prompt, model.name, options);
+    } else if (model.provider === 'openai') {
+      return await this.generateWithOpenAI(prompt, model.name, options);
+    }
+
+    throw new Error(`Unknown provider: ${model.provider}`);
+  }
+
+  /**
+   * Generate text using Google Gemini
+   */
+  async generateWithGemini(prompt, modelName, options = {}) {
+    if (!this.gemini) {
+      throw new Error('Gemini API key not configured. Set GEMINI_API_KEY in .env file.');
+    }
+
+    const model = this.gemini.getGenerativeModel({ model: modelName });
+
+    const generationConfig = {
+      temperature: options.temperature || 0.9,
+      topP: options.topP || 1,
+      topK: options.topK || 40,
+      maxOutputTokens: options.maxTokens || 2048,
+    };
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig,
+    });
+
+    const response = result.response;
+    return response.text();
+  }
+
+  /**
+   * Generate text using OpenAI
+   */
+  async generateWithOpenAI(prompt, modelName, options = {}) {
+    if (!this.openai) {
+      throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY in .env file.');
+    }
+
+    const response = await this.openai.chat.completions.create({
+      model: modelName,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: options.temperature || 0.9,
+      max_tokens: options.maxTokens || 2048,
+    });
+
+    return response.choices[0].message.content;
+  }
+
+  /**
+   * Generate travel recommendations using AI
+   */
+  async generateTravelRecommendations(destination, preferences = {}, modelKey = 'gemini-2.0-flash') {
+    const prompt = `You are a travel expert. Generate personalized travel recommendations for ${destination}.
+
+Preferences:
+- Budget: ${preferences.budget || 'moderate'}
+- Duration: ${preferences.duration || '3-5 days'}
+- Interests: ${preferences.interests || 'sightseeing, food, culture'}
+- Travel style: ${preferences.travelStyle || 'relaxed'}
+
+Please provide:
+1. Top 5 must-visit attractions
+2. 3 recommended hotels (budget, mid-range, luxury)
+3. Local cuisine recommendations
+4. Best time to visit
+5. Cultural tips and etiquette
+6. Estimated daily budget breakdown
+
+Format the response as JSON with clear sections.`;
+
+    const response = await this.generateText(prompt, modelKey);
+    return response;
+  }
+
+  /**
+   * Generate trip itinerary using AI
+   */
+  async generateItinerary(destination, days, preferences = {}, modelKey = 'gemini-2.0-flash') {
+    const prompt = `Create a detailed ${days}-day itinerary for ${destination}.
+
+Preferences:
+- Budget: ${preferences.budget || 'moderate'}
+- Interests: ${preferences.interests || 'sightseeing, food'}
+- Pace: ${preferences.pace || 'moderate'}
+
+For each day, provide:
+- Morning, afternoon, and evening activities
+- Restaurant recommendations
+- Transportation tips
+- Estimated costs
+- Pro tips
+
+Make it practical and realistic with travel times between locations.`;
+
+    const response = await this.generateText(prompt, modelKey);
+    return response;
+  }
+
+  /**
+   * Chat with AI assistant
+   */
+  async chat(messages, modelKey = 'gemini-2.0-flash', options = {}) {
+    const model = this.models[modelKey];
+
+    if (!model) {
+      throw new Error(`Unknown model: ${modelKey}`);
+    }
+
+    if (model.provider === 'gemini') {
+      return await this.chatWithGemini(messages, model.name, options);
+    } else if (model.provider === 'openai') {
+      return await this.chatWithOpenAI(messages, model.name, options);
+    }
+  }
+
+  async chatWithGemini(messages, modelName, options = {}) {
+    if (!this.gemini) {
+      throw new Error('Gemini API key not configured');
+    }
+
+    const model = this.gemini.getGenerativeModel({ model: modelName });
+    const chat = model.startChat({
+      history: messages.slice(0, -1).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      })),
+      generationConfig: {
+        temperature: options.temperature || 0.9,
+        maxOutputTokens: options.maxTokens || 2048,
+      },
+    });
+
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessage(lastMessage.content);
+    return result.response.text();
+  }
+
+  async chatWithOpenAI(messages, modelName, options = {}) {
+    if (!this.openai) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const response = await this.openai.chat.completions.create({
+      model: modelName,
+      messages: messages,
+      temperature: options.temperature || 0.9,
+      max_tokens: options.maxTokens || 2048,
+    });
+
+    return response.choices[0].message.content;
+  }
+
+  /**
+   * Get available models
+   */
+  getAvailableModels() {
+    const available = [];
+
+    if (this.gemini) {
+      available.push(
+        { key: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google' },
+        { key: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google' },
+        { key: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google' }
+      );
+    }
+
+    if (this.openai) {
+      available.push(
+        { key: 'gpt-4', name: 'GPT-4', provider: 'OpenAI' },
+        { key: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI' },
+        { key: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI' }
+      );
+    }
+
+    return available;
+  }
+}
+
+module.exports = new AIService();

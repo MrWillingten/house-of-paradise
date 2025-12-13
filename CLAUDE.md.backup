@@ -1,0 +1,271 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a polyglot microservices-based travel booking platform with hotel, trip, payment, and authentication services, orchestrated using Docker Compose and Kubernetes. The system uses an API Gateway pattern with comprehensive security middleware.
+
+## Architecture
+
+### Service Layer (Polyglot Implementation)
+- **API Gateway** (Node.js/Express, Port 8080): Unified entry point with extensive security middleware (DDoS protection, rate limiting, XSS/injection protection)
+- **Hotel Service** (Node.js/Express, Port 3001): Hotel CRUD, booking management, real-time updates via Socket.IO, loyalty rewards, personalization
+- **Trip Service** (Java Spring Boot, Port 3002): Trip/journey management using JPA with PostgreSQL
+- **Payment Service** (Python FastAPI, Port 3003): Payment processing with SQLAlchemy
+- **Auth Service** (Node.js/Express, Port 3004): JWT-based authentication with MFA support
+- **Frontend** (React, Port 3000): SPA with React Router, proxies to API Gateway
+
+### Data Layer
+- **MongoDB** (Port 27017): Used by Hotel Service (`hoteldb`) and Auth Service (`authdb`)
+- **PostgreSQL** (Port 5432): Shared by Trip Service (`tripdb`) and Payment Service (`paymentdb`)
+
+### Monitoring
+- **Prometheus** (Port 9090): Metrics collection
+- **Grafana** (Port 3005): Visualization dashboards (admin/admin123)
+
+### Inter-Service Communication
+Services communicate synchronously via HTTP/REST through the API Gateway. The gateway handles authentication via JWT tokens from Auth Service, validates requests, and routes to backend services.
+
+## Common Commands
+
+### Development
+
+**Start all services (Docker Compose):**
+```bash
+docker-compose up --build
+```
+
+**Stop all services:**
+```bash
+docker-compose down
+```
+
+**Clean restart (removes volumes):**
+```bash
+docker-compose down -v
+docker-compose up --build
+```
+
+**View logs:**
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f hotel-service
+docker logs hotel-service
+```
+
+### Individual Service Development
+
+**Hotel Service:**
+```bash
+cd hotel-service
+npm install
+node server.js
+# No dev script configured - runs directly with node
+```
+
+**Trip Service:**
+```bash
+cd trip-service
+mvn clean install
+mvn spring-boot:run
+```
+
+**Payment Service:**
+```bash
+cd payment-service
+pip install -r requirements.txt
+uvicorn main:app --reload --port 3003
+```
+
+**Auth Service:**
+```bash
+cd auth-service
+npm install
+node server.js
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm start  # Starts on port 3000, proxies API calls to 8080
+```
+
+### Kubernetes Deployment
+
+**Deploy to cluster:**
+```bash
+# Apply all manifests
+kubectl apply -f k8s/
+
+# Check status
+kubectl get pods -n travel-booking
+kubectl get services -n travel-booking
+
+# View logs
+kubectl logs -n travel-booking <pod-name>
+
+# Delete deployment
+kubectl delete -f k8s/
+```
+
+**Access via NodePort:**
+```
+http://localhost:30080
+```
+
+### Database Access
+
+**MongoDB:**
+```bash
+docker exec -it mongodb mongosh
+use hoteldb
+db.hotels.find()
+```
+
+**PostgreSQL:**
+```bash
+docker exec -it postgres psql -U postgres
+\c tripdb
+\dt
+```
+
+### Testing
+
+**Health checks:**
+```bash
+curl http://localhost:8080/health
+curl http://localhost:3001/health
+curl http://localhost:3002/api/health
+curl http://localhost:3003/health
+```
+
+## Key Architectural Patterns
+
+### API Gateway Security Stack
+The API Gateway applies security middleware in a specific order (see `api-gateway/server.js`):
+1. CSP nonce generation for strict Content Security Policy
+2. Helmet configuration with nonces (XSS, clickjacking protection)
+3. Secure cookie settings (HttpOnly, Secure, SameSite)
+4. CORS protection
+5. NoSQL injection protection (MongoDB sanitization)
+6. XSS protection and HTML sanitization
+7. HTTP Parameter Pollution protection
+8. Path traversal, command injection, and SSRF protection
+9. DDoS protection middleware with rate limiting
+10. Authentication and authorization via JWT
+
+**Critical:** When modifying gateway security, maintain this middleware order. DDoS protection includes multiple limiters:
+- `globalLimiter`: General rate limiting
+- `authLimiter`: Stricter limits for auth endpoints
+- `paymentLimiter`: Transaction protection
+- `browseLimiter`: Search/browse operations
+- `connectionLimiter`: Concurrent connection limits
+
+### Authentication Flow
+1. User registers/logs in via Auth Service (POST `/auth/register`, `/auth/login`)
+2. Auth Service returns JWT token
+3. Client includes token in `Authorization: Bearer <token>` header
+4. API Gateway validates token via `verifyToken` middleware before routing
+5. Admin-only routes use `isAdmin` middleware
+
+Token verification is performed at the gateway level before proxying to backend services.
+
+### Database Per Service Pattern
+Each service owns its database schema. **Never directly access another service's database.** For cross-service data needs, implement REST API calls through the gateway.
+
+### Socket.IO Real-Time Updates
+Hotel Service implements real-time notifications for booking updates via Socket.IO (see `hotel-service/server.js`). Clients connect to `http://hotel-service:3001` and listen for events like `bookingUpdate`, `hotelUpdate`.
+
+### Loyalty and Personalization
+Hotel Service includes loyalty points system (`loyalty.js`) and personalization engine (`personalization.js`) for user recommendations. These are service-specific features that use MongoDB collections.
+
+## Important File Locations
+
+### Configuration
+- `docker-compose.yml`: Local development orchestration
+- `k8s/*.yaml`: Kubernetes manifests (namespace, services, deployments)
+- `monitoring/prometheus.yml`: Metrics scraping configuration
+- `.env` files: Service-specific environment variables (not committed to repo in production)
+
+### Security Middleware
+- `api-gateway/middleware/security.js`: Comprehensive security (XSS, injection, CSRF)
+- `api-gateway/middleware/ddosProtection.js`: Rate limiting and DDoS mitigation
+- `api-gateway/middleware/auth.js`: JWT verification and admin checks
+
+### Service Entry Points
+- `api-gateway/server.js`: Gateway routing and orchestration
+- `hotel-service/server.js`: Hotel service with Socket.IO
+- `trip-service/src/main/java/com/travel/trip/TripApplication.java`: Spring Boot app
+- `payment-service/main.py`: FastAPI application
+- `auth-service/server.js`: Authentication and MFA
+- `frontend/src/App.js`: React application root
+
+## Common Development Scenarios
+
+### Adding a New Route to API Gateway
+1. Add route definition in `api-gateway/server.js`
+2. Apply appropriate middleware: `verifyToken` for authenticated, `isAdmin` for admin-only
+3. Use appropriate rate limiter: `authLimiter`, `paymentLimiter`, `browseLimiter`, or default
+4. Proxy to backend service using axios with error handling
+5. Remove sensitive data from responses using `removeSensitiveData` if needed
+
+### Adding a New Hotel Service Endpoint
+1. Define route in `hotel-service/server.js`
+2. Add validation using express-validator
+3. Implement MongoDB operations using Mongoose models
+4. Emit Socket.IO events if real-time updates needed
+5. Add corresponding route in API Gateway
+
+### Modifying Trip Service (Java/Spring Boot)
+1. Update entity in `trip-service/src/main/java/com/travel/trip/model/`
+2. Add repository methods in `repository/` if needed
+3. Implement controller logic in `controller/TripController.java`
+4. Spring Data JPA handles database migrations via `spring.jpa.hibernate.ddl-auto`
+
+### Debugging Service Communication
+1. Check service health endpoints first
+2. Review API Gateway logs for routing issues
+3. Verify environment variables are correctly set in docker-compose.yml
+4. Ensure services are on the same network (`microservices-network`)
+5. Check that service URLs in gateway match container names (e.g., `http://hotel-service:3001`)
+
+### Working with PostgreSQL Schemas
+The `init-db` service in docker-compose.yml creates `tripdb` and `paymentdb` on startup. Schema creation is handled by:
+- Trip Service: Spring Boot JPA auto-creates tables
+- Payment Service: SQLAlchemy models auto-create tables
+
+### Port Conflicts
+If ports are in use, modify `docker-compose.yml` port mappings. Internal container ports should remain unchanged; only modify the host port (left side of `host:container`).
+
+## Security Considerations
+
+- JWT_SECRET must be changed in production (currently in `auth-service/.env`)
+- Database passwords are default values - rotate for production
+- Rate limits in DDoS protection middleware may need tuning based on traffic patterns
+- CORS configuration in gateway restricts origins - update for production domains
+- CSP nonces are generated per-request for strict XSS prevention
+- All validation happens at gateway and service layers - never trust client input
+
+## Known Limitations
+
+- Synchronous REST communication only (no message queue/async patterns)
+- No distributed tracing or service mesh
+- Shared PostgreSQL instance for Trip and Payment services (should be separate in production)
+- No database replication or high availability setup
+- Frontend proxies to localhost:8080 (not configurable via environment variable)
+
+## Testing the Complete Flow
+
+1. Start all services: `docker-compose up --build`
+2. Register user: `POST http://localhost:8080/auth/register`
+3. Login: `POST http://localhost:8080/auth/login` (returns JWT)
+4. Create hotel: `POST http://localhost:8080/api/hotels` (with JWT in header)
+5. Book hotel: `POST http://localhost:8080/api/bookings` (with JWT)
+6. Process payment: `POST http://localhost:8080/api/complete-booking`
+
+API documentation is in `README.md` with curl examples for all endpoints.

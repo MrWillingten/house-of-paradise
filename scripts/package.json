@@ -1,0 +1,17 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "``` scripts/ ├── seeds/                      # Database seeding scripts │   ├── seed-hotels.js         # Seeds 20 famous hotels │   └── seed-trips.js          # Seeds 20 real-life trips ├── services/                   # Background services │   └── trip-sync-service.js   # Real-time trip synchronization ├── admin-cli.js               # Admin command-line interface ├── create-admin.js            # Creates admin user └── README.md                  # This file ```",
+  "main": "admin-cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "mongoose": "^9.0.1"
+  }
+}

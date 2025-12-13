@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(npm start)",
+      "Bash(ls:*)",
+      "Bash(dir /b \"C:\\Users\\son5a\\Desktop\\Cloud Project Travel Booking Microservices\\travel-booking-microservices\\hotel-service\\*.js\")",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTNjNDA3MDdiMmU2ZGI1MGRiNWM0MTQiLCJlbWFpbCI6InRlc3R1c2VyNUBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzY1NTU2Mzg4LCJleHAiOjE3NjU1NTcyODh9.svA0N4rGoLDLw_iq3zFcMJR3PVMWZLndpfQpspak9YA\")",
+      "Bash(__NEW_LINE__ echo \"=== Testing Payment History via API Gateway ===\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n1. Finding test user IDs...\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n1. Users with ''testuser'' in email:\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n2. Loyalty profiles for test users:\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n3. Bookings for test user:\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n4. Payments for test user:\")",
+      "Bash(__NEW_LINE__ echo -e \"\\n=== All test data removed ===\")",
+      "Bash(docker logs:*)",
+      "Bash(cat:*)"
+    ]
+  }
+}
