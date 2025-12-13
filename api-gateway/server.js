@@ -1171,12 +1171,14 @@ app.post('/api/complete-booking',
 
     // Step 3: Create the payment
     const paymentPayload = {
-      user_id: userId, // Use authenticated user ID
-      booking_type: type,
-      booking_id: booking.id || booking._id,
-      amount: booking.totalPrice,
-      payment_method: paymentData.payment_method
+      user_id: String(userId), // Ensure string
+      booking_type: String(type),
+      booking_id: String(booking.id || booking._id), // Convert ObjectId to string
+      amount: Number(booking.totalPrice),
+      payment_method: String(paymentData.payment_method)
     };
+
+    console.log('💳 Payment payload:', JSON.stringify(paymentPayload));
 
     const paymentResponse = await axios.post(`${PAYMENT_SERVICE}/api/payments`, paymentPayload);
     const payment = paymentResponse.data.data;
