@@ -329,12 +329,8 @@ const corsOptions = {
       'http://127.0.0.1:8080',
       'http://127.0.0.1:8082',
       // Production domains
-      'https://travel-booking-microservices.vercel.app',
-      'https://hop-api-gateway.onrender.com',
-      'https://houseofparadise.com',
-      'https://www.houseofparadise.com',
       'https://house-of-paradise.vercel.app',
-      'https://house-of-paradise-mrwillingtens-projects.vercel.app',
+      'https://hop-api-gateway.onrender.com',
     ];
 
     if (allowedOrigins.includes(normalizedOrigin)) {
