@@ -11,16 +11,17 @@ const rateLimit = require('express-rate-limit');
  * 5. Pattern-based attack detection
  */
 
-// ==================== LAYER 1: UX-FRIENDLY RATE LIMITING ====================
+// ==================== LAYER 1: VERY LENIENT RATE LIMITING ====================
+// Configured for smooth user experience - only blocks obvious attacks
 
-// Global limiter - generous for normal users, blocks attacks
+// Global limiter - VERY generous for normal users
 const globalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 300, // Max 300 requests per minute per IP (was 100) - allows smooth browsing
+  max: 1000, // 1000 requests per minute - extremely generous
   message: {
     success: false,
-    error: 'You\'re browsing too quickly! Please wait a moment and try again.',
-    retryAfter: 60 // Tell user when they can retry
+    error: 'Too many requests. Please wait a moment.',
+    retryAfter: 60
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -28,42 +29,39 @@ const globalLimiter = rateLimit({
     // Skip rate limit for health checks and authenticated users
     return req.path === '/health' || req.headers.authorization;
   },
-  // Custom handler for better UX
   handler: (req, res) => {
     res.status(429).json({
       success: false,
-      error: 'You\'re browsing too quickly! Please wait a moment and try again.',
-      retryAfter: 60,
-      tip: 'Try refreshing in a minute or logging in for unlimited access.'
+      error: 'Too many requests. Please wait a moment.',
+      retryAfter: 60
     });
   }
 });
 
-// Burst protection - allows normal clicking, blocks bots
+// Burst protection - VERY lenient
 const burstLimiter = rateLimit({
   windowMs: 10 * 1000, // 10 second window
-  max: 50, // Max 50 requests per 10 seconds (was 20) - allows rapid browsing
+  max: 200, // 200 requests per 10 seconds - allows very rapid clicking
   message: {
     success: false,
-    error: 'Slow down! You\'re clicking too fast.',
+    error: 'Slow down a bit!',
     retryAfter: 10
   },
-  skipSuccessfulRequests: false, // Count all requests
-  skipFailedRequests: true, // Don't penalize failed requests
+  skipSuccessfulRequests: false,
+  skipFailedRequests: true,
   handler: (req, res) => {
     res.status(429).json({
       success: false,
-      error: 'Slow down! You\'re clicking too fast.',
-      retryAfter: 10,
-      tip: 'Wait a few seconds before trying again.'
+      error: 'Slow down a bit!',
+      retryAfter: 10
     });
   }
 });
 
-// Auth endpoint protection (prevents brute force)
+// Auth endpoint protection - more lenient for testing
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // 50 login attempts per 15 minutes (increased for testing/development)
+  max: 100, // 100 login attempts per 15 minutes
   message: {
     success: false,
     error: 'Too many authentication attempts. Please try again later.'
@@ -72,13 +70,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Public browsing limiter - VERY generous for normal users
+// Public browsing limiter - essentially unlimited for normal use
 const browseLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 500, // 500 requests per minute (was 120) - ultra-generous for smooth UX
+  max: 2000, // 2000 requests per minute - practically unlimited
   message: {
     success: false,
-    error: 'You\'re browsing very actively! Take a quick break.',
+    error: 'Too many requests.',
     retryAfter: 60
   },
   skip: (req) => {
@@ -88,17 +86,16 @@ const browseLimiter = rateLimit({
   handler: (req, res) => {
     res.status(429).json({
       success: false,
-      error: 'You\'re browsing very actively! Take a quick break.',
-      retryAfter: 60,
-      tip: 'Log in for unlimited browsing, or wait a minute.'
+      error: 'Too many requests.',
+      retryAfter: 60
     });
   }
 });
 
-// Payment protection (prevents payment spam)
+// Payment protection - slightly more lenient
 const paymentLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 3, // 3 payment requests per minute
+  max: 10, // 10 payment requests per minute
   message: {
     success: false,
     error: 'Payment rate limit exceeded. Please wait before retrying.'
@@ -109,15 +106,15 @@ const paymentLimiter = rateLimit({
 
 const slowDown = require('express-slow-down');
 
-// Gradually slow down ONLY suspicious behavior (errors, failures)
+// Gradually slow down ONLY after extreme usage - very lenient
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 1000, // Allow 1000 requests per 15 min at full speed (was 200) - VERY generous
+  delayAfter: 5000, // Allow 5000 requests per 15 min at full speed - extremely generous
   delayMs: (used, req) => {
-    const delayAfter = 1000;
-    return (used - delayAfter) * 25; // Each extra request adds 25ms delay (was 50ms)
+    const delayAfter = 5000;
+    return (used - delayAfter) * 10; // Each extra request adds only 10ms delay
   },
-  maxDelayMs: 2000, // Max 2 second delay (was 3s)
+  maxDelayMs: 1000, // Max 1 second delay
 
   // CRITICAL: Only slow down failed requests, NEVER successful browsing
   skipSuccessfulRequests: true, // Don't penalize normal browsing
