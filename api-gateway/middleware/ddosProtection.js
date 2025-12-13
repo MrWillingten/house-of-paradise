@@ -331,6 +331,8 @@ const corsOptions = {
       // Production domains
       'https://travel-booking-microservices.vercel.app',
       'https://hop-api-gateway.onrender.com',
+      'https://houseofparadise.com',
+      'https://www.houseofparadise.com',
     ];
 
     if (allowedOrigins.includes(normalizedOrigin)) {
