@@ -147,7 +147,7 @@ function Account() {
       // Use native fetch for file uploads to avoid axios Content-Type header issues
       // This ensures the browser sets the correct multipart/form-data boundary
       const token = localStorage.getItem('accessToken');
-      const fetchResponse = await fetch('/api/auth/upload-profile-image', {
+      const fetchResponse = await fetch(`${API_BASE_URL}/api/auth/upload-profile-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
