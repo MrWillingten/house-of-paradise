@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const WishlistButton = ({ hotelId, userId, size = 'medium' }) => {
   const [isSaved, setIsSaved] = useState(false);
@@ -14,8 +14,8 @@ const WishlistButton = ({ hotelId, userId, size = 'medium' }) => {
     if (!userId) return;
 
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/personalization/wishlist/${userId}`
+      const response = await api.get(
+        `/api/personalization/wishlist/${userId}`
       );
       const wishlist = response.data.data;
       const isInWishlist = wishlist.some(item => item.hotel._id === hotelId);
@@ -37,12 +37,12 @@ const WishlistButton = ({ hotelId, userId, size = 'medium' }) => {
 
     try {
       if (isSaved) {
-        await axios.delete('http://localhost:3001/api/personalization/wishlist/remove', {
+        await api.delete('/api/personalization/wishlist/remove', {
           data: { userId, hotelId }
         });
         setIsSaved(false);
       } else {
-        await axios.post('http://localhost:3001/api/personalization/wishlist/add', {
+        await api.post('/api/personalization/wishlist/add', {
           userId,
           hotelId
         });

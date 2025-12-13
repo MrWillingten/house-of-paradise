@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, TrendingDown, Check, X, Star, MapPin } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const PriceAlerts = ({ userId }) => {
   const [alerts, setAlerts] = useState([]);
@@ -16,8 +16,8 @@ const PriceAlerts = ({ userId }) => {
 
   const fetchAlerts = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/personalization/price-alerts/${userId}`
+      const response = await api.get(
+        `/api/personalization/price-alerts/${userId}`
       );
       setAlerts(response.data.data);
     } catch (error) {

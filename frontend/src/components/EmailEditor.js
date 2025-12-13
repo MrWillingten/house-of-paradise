@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Check, X, AlertCircle, Loader, Shield } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 function EmailEditor({ currentEmail, isVerified = true, darkMode = false, onEmailChange }) {
   const [isEditing, setIsEditing] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -79,7 +81,7 @@ function EmailEditor({ currentEmail, isVerified = true, darkMode = false, onEmai
     try {
       // API call to change email
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8080/api/auth/change-email', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/change-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +125,7 @@ function EmailEditor({ currentEmail, isVerified = true, darkMode = false, onEmai
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8080/api/auth/resend-verification', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

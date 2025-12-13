@@ -11,7 +11,7 @@ import {
   X,
   CheckCircle,
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const SessionManagement = ({ userId }) => {
   const [sessions, setSessions] = useState([]);
@@ -26,11 +26,7 @@ const SessionManagement = ({ userId }) => {
     try {
       setError(null);
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:8080/api/auth/sessions', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get('/api/auth/sessions');
 
       // Assuming response structure: { success: true, data: [...sessions] }
       setSessions(response.data.data || response.data);
@@ -63,14 +59,7 @@ const SessionManagement = ({ userId }) => {
       setActionLoading(sessionId);
       const token = localStorage.getItem('accessToken');
 
-      await axios.delete(
-        `http://localhost:8080/api/auth/sessions/${sessionId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.delete(`/api/auth/sessions/${sessionId}`);
 
       // Remove session from local state
       setSessions(sessions.filter((s) => s.id !== sessionId));
@@ -88,11 +77,7 @@ const SessionManagement = ({ userId }) => {
       setActionLoading('all');
       const token = localStorage.getItem('accessToken');
 
-      await axios.delete('http://localhost:8080/api/auth/sessions/all', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete('/api/auth/sessions/all');
 
       // Keep only current session
       setSessions(sessions.filter((s) => s.isCurrent));

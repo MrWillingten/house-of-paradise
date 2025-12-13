@@ -8,6 +8,8 @@ import {
 import ProfileImageUpload from '../components/ProfileImageUpload';
 import { countries, validatePhoneNumber } from '../utils/countries';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 function Account() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -203,7 +205,7 @@ function Account() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8080/api/auth/update-display-name', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/update-display-name`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -553,7 +555,7 @@ Do NOT share these codes with anyone.
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8080/api/auth/disable-account', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/disable-account`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -584,7 +586,7 @@ Do NOT share these codes with anyone.
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('http://localhost:8080/api/auth/delete-account', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

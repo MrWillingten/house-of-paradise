@@ -3,7 +3,7 @@ import ReviewCard from './ReviewCard';
 import ReviewStats from './ReviewStats';
 import ReviewForm from './ReviewForm';
 import { Star, Filter, Plus, ChevronDown } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const ReviewsSection = ({ hotelId, currentUserId, hasBooking }) => {
   const [reviews, setReviews] = useState([]);
@@ -27,7 +27,7 @@ const ReviewsSection = ({ hotelId, currentUserId, hasBooking }) => {
       if (filterByTravelType) params.travelType = filterByTravelType;
       if (filterByRating) params.minRating = filterByRating;
 
-      const response = await axios.get(`http://localhost:3001/api/hotels/${hotelId}/reviews`, { params });
+      const response = await api.get(`/api/hotels/${hotelId}/reviews`, { params });
 
       setReviews(response.data.data);
       setStats(response.data.stats);
@@ -40,8 +40,8 @@ const ReviewsSection = ({ hotelId, currentUserId, hasBooking }) => {
 
   const handleSubmitReview = async (reviewData) => {
     try {
-      const response = await axios.post(
-        `http://localhost:3001/api/hotels/${hotelId}/reviews`,
+      const response = await api.post(
+        `/api/hotels/${hotelId}/reviews`,
         reviewData
       );
 
@@ -63,7 +63,7 @@ const ReviewsSection = ({ hotelId, currentUserId, hasBooking }) => {
 
   const handleVote = async (reviewId, helpful) => {
     try {
-      await axios.post(`http://localhost:3001/api/reviews/${reviewId}/vote`, {
+      await api.post(`/api/hotels/reviews/${reviewId}/vote`, {
         userId: currentUserId,
         helpful,
       });

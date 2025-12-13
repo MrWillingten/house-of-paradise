@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Star, MapPin, Eye } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const RecentlyViewed = ({ userId }) => {
   const [recentHotels, setRecentHotels] = useState([]);
@@ -18,8 +18,8 @@ const RecentlyViewed = ({ userId }) => {
 
   const fetchRecentlyViewed = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/personalization/recently-viewed/${userId}?limit=6`
+      const response = await api.get(
+        `/api/personalization/recently-viewed/${userId}?limit=6`
       );
       setRecentHotels(response.data.data || []);
     } catch (error) {

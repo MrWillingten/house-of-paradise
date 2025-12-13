@@ -7,6 +7,9 @@
 
 import io from 'socket.io-client';
 
+// WebSocket URL - use hotel service directly for WebSocket connections
+const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 class HotelWebSocketService {
   constructor() {
     this.socket = null;
@@ -27,7 +30,7 @@ class HotelWebSocketService {
 
     console.log('🔌 Connecting to Hotel WebSocket...');
 
-    this.socket = io('http://localhost:3001', {
+    this.socket = io(WEBSOCKET_URL, {
       reconnection: true,
       reconnectionDelay: 2000,
       reconnectionAttempts: this.maxReconnectAttempts,

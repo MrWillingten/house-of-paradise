@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MapPin } from 'lucide-react';
-import axios from 'axios';
+import api from '../../services/api';
 
 const Testimonials = ({ darkMode }) => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
@@ -12,7 +12,7 @@ const Testimonials = ({ darkMode }) => {
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/testimonials/featured?limit=4');
+        const response = await api.get('/api/hotels/testimonials/featured?limit=4');
         if (response.data.success && response.data.data.length > 0) {
           setTestimonials(response.data.data);
         } else {

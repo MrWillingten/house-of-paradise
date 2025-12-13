@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ChevronLeft, ChevronRight, Star, MapPin, Heart } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const RecommendedForYou = ({ userId }) => {
   const [recommendations, setRecommendations] = useState([]);
@@ -19,8 +19,8 @@ const RecommendedForYou = ({ userId }) => {
 
   const fetchRecommendations = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/personalization/recommendations/${userId}?limit=8`
+      const response = await api.get(
+        `/api/personalization/recommendations/${userId}?limit=8`
       );
       setRecommendations(response.data.data || []);
     } catch (error) {

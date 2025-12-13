@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, TrendingDown, Bell, Star, MapPin, Trash2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -21,8 +21,8 @@ const Wishlist = () => {
 
   const fetchWishlist = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/personalization/wishlist/${userId}`
+      const response = await api.get(
+        `/api/personalization/wishlist/${userId}`
       );
       setWishlist(response.data.data);
     } catch (error) {
@@ -36,7 +36,7 @@ const Wishlist = () => {
     e.stopPropagation();
 
     try {
-      await axios.delete('http://localhost:3001/api/personalization/wishlist/remove', {
+      await api.delete('/api/personalization/wishlist/remove', {
         data: { userId, hotelId }
       });
 
@@ -57,7 +57,7 @@ const Wishlist = () => {
 
     if (targetPrice && !isNaN(targetPrice)) {
       try {
-        await axios.post('http://localhost:3001/api/personalization/price-alert', {
+        await api.post('/api/personalization/price-alert', {
           userId,
           hotelId,
           targetPrice: Number(targetPrice)
