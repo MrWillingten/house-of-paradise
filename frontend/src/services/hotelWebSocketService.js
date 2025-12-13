@@ -159,8 +159,9 @@ class HotelWebSocketService {
 // Export singleton instance
 const hotelWebSocketService = new HotelWebSocketService();
 
-// Auto-connect on import (optional - can be called manually if preferred)
-if (typeof window !== 'undefined') {
+// Only auto-connect in development (localhost)
+// In production, WebSocket is disabled anyway due to Render free tier limitations
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
   hotelWebSocketService.connect();
 }
 

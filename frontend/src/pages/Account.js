@@ -8,7 +8,11 @@ import {
 import ProfileImageUpload from '../components/ProfileImageUpload';
 import { countries, validatePhoneNumber } from '../utils/countries';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// Use environment variable, fallback to production URL if not set
+const API_BASE_URL = process.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://hop-api-gateway.onrender.com'
+    : '');
 
 function Account() {
   const navigate = useNavigate();
