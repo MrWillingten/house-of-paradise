@@ -8,7 +8,9 @@
 import io from 'socket.io-client';
 
 // WebSocket URL - use hotel service directly for WebSocket connections
-const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// In production (Render free tier), WebSockets are not reliably supported
+const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3001';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REACT_APP_API_URL;
 
 class HotelWebSocketService {
   constructor() {
@@ -17,12 +19,19 @@ class HotelWebSocketService {
     this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.disabled = IS_PRODUCTION; // Disable WebSocket in production (free tier doesn't support it well)
   }
 
   /**
    * Initialize the WebSocket connection (call once on app start)
    */
   connect() {
+    // Skip WebSocket connection in production (Render free tier limitation)
+    if (this.disabled) {
+      console.log('ℹ️ WebSocket disabled in production mode');
+      return;
+    }
+
     if (this.socket && this.connected) {
       console.log('✅ WebSocket already connected');
       return;
