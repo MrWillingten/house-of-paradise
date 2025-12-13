@@ -166,6 +166,9 @@ const Checkout = () => {
       });
 
       if (response.data.success) {
+        // Dispatch event to update loyalty points in Navbar
+        window.dispatchEvent(new Event('loyaltyPointsUpdated'));
+
         // Navigate to confirmation with all the booking details including loyalty info
         navigate('/confirmation', {
           state: {

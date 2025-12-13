@@ -14,6 +14,21 @@ function TierBadge({ userId }) {
     }
   }, [userId]);
 
+  // Listen for loyalty points updates (after booking completion)
+  useEffect(() => {
+    const handleLoyaltyUpdate = () => {
+      if (userId) {
+        fetchLoyaltyData();
+      }
+    };
+
+    window.addEventListener('loyaltyPointsUpdated', handleLoyaltyUpdate);
+
+    return () => {
+      window.removeEventListener('loyaltyPointsUpdated', handleLoyaltyUpdate);
+    };
+  }, [userId]);
+
   const fetchLoyaltyData = async () => {
     try {
       const response = await api.get(`/api/loyalty/profile/${userId}`);
