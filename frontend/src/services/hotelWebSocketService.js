@@ -162,3 +162,4 @@ if (typeof window !== 'undefined') {
 }
 
 export default hotelWebSocketService;
+// Build trigger: 1765673390
