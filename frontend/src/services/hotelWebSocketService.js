@@ -1,20 +1,10 @@
 /**
  * CENTRALIZED HOTEL WEBSOCKET SERVICE
- * v3.0 - December 2025 - Production Fix
+ * v4.0 - December 2025 - Production Fix
  *
  * WebSocket is COMPLETELY DISABLED in production.
  * Only connects on localhost for development.
  */
-
-// Check if we're on localhost BEFORE importing socket.io
-const isLocalhost = typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-// Only import socket.io if we're on localhost
-let io = null;
-if (isLocalhost) {
-  io = require('socket.io-client').default;
-}
 
 class HotelWebSocketService {
   constructor() {
@@ -23,22 +13,41 @@ class HotelWebSocketService {
     this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 3;
-    this.disabled = !isLocalhost; // Disabled if not on localhost
+    this.io = null;
   }
 
-  connect() {
-    // PRODUCTION: Do nothing, return immediately
-    if (!isLocalhost || !io) {
+  // Check at runtime if we're on localhost
+  isLocalhost() {
+    if (typeof window === 'undefined') return false;
+    const hostname = window.location.hostname;
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  }
+
+  async connect() {
+    // PRODUCTION CHECK: If not localhost, do absolutely nothing
+    if (!this.isLocalhost()) {
       return;
     }
 
+    // Already connected?
     if (this.socket && this.connected) {
       return;
     }
 
+    // Dynamically import socket.io only when needed (localhost only)
+    if (!this.io) {
+      try {
+        const socketModule = await import('socket.io-client');
+        this.io = socketModule.default || socketModule.io || socketModule;
+      } catch (err) {
+        console.error('[WebSocket] Failed to load socket.io:', err);
+        return;
+      }
+    }
+
     console.log('[WebSocket] Connecting to localhost:3001...');
 
-    this.socket = io('http://localhost:3001', {
+    this.socket = this.io('http://localhost:3001', {
       reconnection: true,
       reconnectionDelay: 2000,
       reconnectionAttempts: this.maxReconnectAttempts,
@@ -83,7 +92,8 @@ class HotelWebSocketService {
   }
 
   subscribe(hotelId, callback) {
-    if (!hotelId || this.disabled) return () => {};
+    // In production, just return empty unsubscribe function
+    if (!hotelId || !this.isLocalhost()) return () => {};
 
     if (!this.listeners.has(hotelId)) {
       this.listeners.set(hotelId, []);
@@ -134,9 +144,15 @@ class HotelWebSocketService {
 // Singleton instance
 const hotelWebSocketService = new HotelWebSocketService();
 
-// Only connect on localhost
-if (isLocalhost) {
-  hotelWebSocketService.connect();
+// Auto-connect only on localhost - runtime check
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Use setTimeout to ensure this runs after page load
+    setTimeout(() => {
+      hotelWebSocketService.connect();
+    }, 100);
+  }
 }
 
 export default hotelWebSocketService;
