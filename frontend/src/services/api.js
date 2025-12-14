@@ -1,7 +1,24 @@
 import axios from 'axios';
 
-// Use environment variable for API URL in production, empty string for development (uses proxy)
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// Get API URL at runtime - works even if environment variables are not set
+const getApiBaseUrl = () => {
+  // Check environment variable first
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Runtime check based on current hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If not on localhost, we're in production - use Render API Gateway
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return 'https://hop-api-gateway.onrender.com';
+    }
+  }
+  // Local development - use empty string (proxied through React dev server)
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
