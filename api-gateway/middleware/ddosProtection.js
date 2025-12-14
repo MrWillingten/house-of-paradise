@@ -330,9 +330,19 @@ const corsOptions = {
       'https://hop-api-gateway.onrender.com',
     ];
 
+    // Check exact match first
     if (allowedOrigins.includes(normalizedOrigin)) {
       callback(null, true);
-    } else {
+    }
+    // Allow all Vercel preview deployments for this project
+    else if (normalizedOrigin.includes('house-of-paradise') && normalizedOrigin.endsWith('.vercel.app')) {
+      callback(null, true);
+    }
+    // Allow all mrwillingtens-projects Vercel deployments
+    else if (normalizedOrigin.includes('mrwillingtens-projects') && normalizedOrigin.endsWith('.vercel.app')) {
+      callback(null, true);
+    }
+    else {
       // Log suspicious origin
       console.warn(`⚠️  Blocked CORS request from: ${origin}`);
       callback(new Error('CORS policy: Origin not allowed'));

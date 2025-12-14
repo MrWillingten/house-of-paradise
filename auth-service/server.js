@@ -3264,6 +3264,192 @@ app.delete('/api/auth/delete-account',
   }
 );
 
+// ==================== ADMIN ROUTES ====================
+
+// Middleware to check if user is admin
+function isAdmin(req, res, next) {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin access required'
+    });
+  }
+  next();
+}
+
+// Get all users (admin only)
+app.get('/api/admin/users', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find().select('-password -passwordHistory -twoFactorSecret -backupCodes');
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
+    });
+  }
+});
+
+// Get single user (admin only)
+app.get('/api/admin/users/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password -passwordHistory -twoFactorSecret -backupCodes');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    });
+  }
+});
+
+// Update user role (admin only)
+app.patch('/api/admin/users/:id/role', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    ).select('-password -passwordHistory -twoFactorSecret -backupCodes');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user role'
+    });
+  }
+});
+
+// Update user credentials (admin only)
+app.patch('/api/admin/users/:id/credentials', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { password, email } = req.body;
+    const updates = {};
+
+    if (password) {
+      updates.password = await bcrypt.hash(password, 12);
+    }
+    if (email) {
+      updates.email = email;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    ).select('-password -passwordHistory -twoFactorSecret -backupCodes');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error updating user credentials:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user credentials'
+    });
+  }
+});
+
+// Delete user (admin only)
+app.delete('/api/admin/users/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user'
+    });
+  }
+});
+
+// Get admin stats (admin only)
+app.get('/api/admin/stats', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const verifiedUsers = await User.countDocuments({ isVerified: true });
+    const adminUsers = await User.countDocuments({ role: 'admin' });
+    const disabledUsers = await User.countDocuments({ disabled: true });
+    const twoFactorEnabled = await User.countDocuments({ twoFactorEnabled: true });
+
+    // Recent users (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentUsers = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        verifiedUsers,
+        adminUsers,
+        disabledUsers,
+        twoFactorEnabled,
+        recentUsers
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch stats'
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
