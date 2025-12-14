@@ -1,76 +1,89 @@
 /**
  * CENTRALIZED HOTEL WEBSOCKET SERVICE
+ * v2.0 - December 2025 - Production Fix
  *
  * Manages a single WebSocket connection for all hotel real-time updates.
- * Prevents multiple connections and improves performance.
+ * WebSocket is DISABLED in production (Render free tier doesn't support it).
+ * Only connects on localhost for development.
  */
 
 import io from 'socket.io-client';
 
-// WebSocket URL - use hotel service directly for WebSocket connections
-// In production (Render free tier), WebSockets are not reliably supported
-const WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3001';
-
-// Check if we're in production - multiple ways to detect
-const IS_PRODUCTION =
-  process.env.NODE_ENV === 'production' ||
-  !!process.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost');
+// Runtime check for production - this runs in the browser, not at build time
+const isProductionRuntime = () => {
+  if (typeof window === 'undefined') return true;
+  const hostname = window.location.hostname;
+  // Only localhost and 127.0.0.1 are considered development
+  return hostname !== 'localhost' && hostname !== '127.0.0.1';
+};
 
 class HotelWebSocketService {
   constructor() {
     this.socket = null;
-    this.listeners = new Map(); // Store listeners by hotelId
+    this.listeners = new Map();
     this.connected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.disabled = IS_PRODUCTION; // Disable WebSocket in production (free tier doesn't support it well)
+    this.maxReconnectAttempts = 3;
+    // Check at runtime, not build time
+    this.disabled = true; // Start disabled, only enable in connect() if on localhost
   }
 
   /**
-   * Initialize the WebSocket connection (call once on app start)
+   * Initialize the WebSocket connection (only works on localhost)
    */
   connect() {
-    // Skip WebSocket connection in production (Render free tier limitation)
-    if (this.disabled) {
-      console.log('ℹ️ WebSocket disabled in production mode');
+    // CRITICAL: Check hostname at runtime, every time connect is called
+    if (typeof window === 'undefined') {
+      console.log('[WebSocket] No window object - skipping');
       return;
     }
+
+    const hostname = window.location.hostname;
+
+    // Only allow WebSocket on localhost or 127.0.0.1
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // Silent in production - no error spam
+      this.disabled = true;
+      return;
+    }
+
+    this.disabled = false;
 
     if (this.socket && this.connected) {
-      console.log('✅ WebSocket already connected');
+      console.log('[WebSocket] Already connected');
       return;
     }
 
-    console.log('🔌 Connecting to Hotel WebSocket...');
+    console.log('[WebSocket] Connecting to localhost:3001...');
 
-    this.socket = io(WEBSOCKET_URL, {
+    this.socket = io('http://localhost:3001', {
       reconnection: true,
       reconnectionDelay: 2000,
       reconnectionAttempts: this.maxReconnectAttempts,
       timeout: 10000,
-      transports: ['websocket', 'polling'] // Try websocket first, fallback to polling
+      transports: ['websocket', 'polling']
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ Hotel WebSocket connected');
+      console.log('[WebSocket] Connected');
       this.connected = true;
       this.reconnectAttempts = 0;
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ Hotel WebSocket disconnected:', reason);
+      console.log('[WebSocket] Disconnected:', reason);
       this.connected = false;
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', () => {
       this.reconnectAttempts++;
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.warn('⚠️  Hotel WebSocket: Max reconnection attempts reached. Running in offline mode.');
+        console.log('[WebSocket] Connection failed - running in offline mode');
+        this.disconnect();
       }
     });
 
-    // Listen for hotel-specific updates
+    // Hotel event listeners
     this.socket.on('hotel-viewers-update', (data) => {
       this.notifyListeners(data.hotelId, 'viewers-update', data);
     });
@@ -88,22 +101,14 @@ class HotelWebSocketService {
     });
   }
 
-  /**
-   * Subscribe to updates for a specific hotel
-   * @param {string} hotelId - The hotel ID to subscribe to
-   * @param {function} callback - Callback function to receive updates
-   * @returns {function} Unsubscribe function
-   */
   subscribe(hotelId, callback) {
     if (!hotelId) return () => {};
 
-    // Store listener
     if (!this.listeners.has(hotelId)) {
       this.listeners.set(hotelId, []);
     }
     this.listeners.get(hotelId).push(callback);
 
-    // Return unsubscribe function
     return () => {
       const callbacks = this.listeners.get(hotelId);
       if (callbacks) {
@@ -111,7 +116,6 @@ class HotelWebSocketService {
         if (index > -1) {
           callbacks.splice(index, 1);
         }
-        // Clean up if no more listeners
         if (callbacks.length === 0) {
           this.listeners.delete(hotelId);
         }
@@ -119,9 +123,6 @@ class HotelWebSocketService {
     };
   }
 
-  /**
-   * Notify all listeners for a specific hotel
-   */
   notifyListeners(hotelId, eventType, data) {
     const callbacks = this.listeners.get(hotelId);
     if (callbacks) {
@@ -129,18 +130,14 @@ class HotelWebSocketService {
         try {
           callback(eventType, data);
         } catch (error) {
-          console.error('Error in WebSocket callback:', error);
+          console.error('[WebSocket] Callback error:', error);
         }
       });
     }
   }
 
-  /**
-   * Disconnect the WebSocket
-   */
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting Hotel WebSocket...');
       this.socket.disconnect();
       this.socket = null;
       this.connected = false;
@@ -148,21 +145,20 @@ class HotelWebSocketService {
     }
   }
 
-  /**
-   * Check if WebSocket is connected
-   */
   isConnected() {
     return this.connected;
   }
 }
 
-// Export singleton instance
+// Singleton instance
 const hotelWebSocketService = new HotelWebSocketService();
 
-// Only auto-connect in development (localhost)
-// In production, WebSocket is disabled anyway due to Render free tier limitations
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  hotelWebSocketService.connect();
+// Auto-connect ONLY on localhost - checked at runtime
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    hotelWebSocketService.connect();
+  }
 }
 
 export default hotelWebSocketService;

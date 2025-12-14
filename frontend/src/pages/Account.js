@@ -8,11 +8,25 @@ import {
 import ProfileImageUpload from '../components/ProfileImageUpload';
 import { countries, validatePhoneNumber } from '../utils/countries';
 
-// Use environment variable, fallback to production URL if not set
-const API_BASE_URL = process.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://hop-api-gateway.onrender.com'
-    : '');
+// Get API URL at runtime - works even if environment variables are not set
+const getApiBaseUrl = () => {
+  // Check environment variable first
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Runtime check based on current hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If not on localhost, we're in production - use Render API Gateway
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return 'https://hop-api-gateway.onrender.com';
+    }
+  }
+  // Local development - use empty string (proxied through React dev server)
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 function Account() {
   const navigate = useNavigate();
