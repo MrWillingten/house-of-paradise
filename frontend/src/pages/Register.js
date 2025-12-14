@@ -107,7 +107,7 @@ function Register() {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg = err.response?.data?.error || 'Registration failed. Please try again.';
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Registration failed. Please try again.';
       setError(errorMsg);
     } finally {
       setLoading(false);
