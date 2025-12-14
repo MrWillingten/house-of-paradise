@@ -116,9 +116,29 @@ app.get('/uploads/profile-images/:filename', async (req, res) => {
   }
 });
 
+// CORS preflight handler for profile image upload
+app.options('/api/auth/upload-profile-image', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin && (origin.includes('house-of-paradise') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  res.status(200).end();
+});
+
 // Upload profile image - BEFORE security middleware to avoid body parsing interference
 // Security is maintained via: JWT token verification + auth-service validation + multer file filtering
-app.post('/api/auth/upload-profile-image', verifyToken, uploadMiddleware.single('profileImage'), async (req, res) => {
+app.post('/api/auth/upload-profile-image', (req, res, next) => {
+  // Add CORS headers for this route since it's before global CORS middleware
+  const origin = req.headers.origin;
+  if (origin && (origin.includes('house-of-paradise') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
+}, verifyToken, uploadMiddleware.single('profileImage'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
