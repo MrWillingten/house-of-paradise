@@ -717,45 +717,127 @@ async function sendSMSCode(phone, countryCode, code) {
   }
 }
 
-// Configure Gmail SMTP email transporter
-let transporter = null;
+// Email configuration - supports multiple providers
+// Priority: 1. Brevo (HTTP API), 2. Gmail SMTP, 3. Console logging
+let emailProvider = null;
 
-async function createEmailTransporter() {
-  try {
-    const hasSmtpCredentials = process.env.SMTP_USER && process.env.SMTP_PASS;
+async function initializeEmailProvider() {
+  // Option 1: Brevo (Sendinblue) - HTTP API (works on Render free tier)
+  if (process.env.BREVO_API_KEY) {
+    console.log('📧 Configuring Brevo (HTTP API)...');
+    emailProvider = {
+      type: 'brevo',
+      apiKey: process.env.BREVO_API_KEY,
+      fromEmail: process.env.EMAIL_FROM || 'service.houseofparadise@gmail.com',
+      fromName: 'House of Paradise'
+    };
+    console.log('✅ Brevo email provider configured');
+    return;
+  }
 
-    if (hasSmtpCredentials) {
-      console.log('📧 Configuring Gmail SMTP...');
-      console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
-      console.log(`   SMTP_PASS length: ${process.env.SMTP_PASS.length} chars`);
+  // Option 2: Gmail SMTP (may not work on Render free tier due to port blocking)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    console.log('📧 Configuring Gmail SMTP...');
+    console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
 
-      // Remove spaces from app password
-      const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
-      console.log(`   SMTP_PASS (no spaces) length: ${smtpPass.length} chars`);
+    const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
+    console.log(`   SMTP_PASS length: ${smtpPass.length} chars`);
 
-      transporter = nodemailer.createTransport({
+    try {
+      const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user: process.env.SMTP_USER,
           pass: smtpPass
-        }
+        },
+        // Add timeout to prevent hanging
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
       });
 
-      // Skip verify - just create transporter and test on first email
-      console.log('✅ Gmail SMTP transporter created (will test on first send)');
-    } else {
-      console.log('⚠️ No SMTP credentials - emails will be logged to console');
-      console.log(`   SMTP_USER set: ${!!process.env.SMTP_USER}`);
-      console.log(`   SMTP_PASS set: ${!!process.env.SMTP_PASS}`);
+      emailProvider = {
+        type: 'smtp',
+        transporter: transporter,
+        fromEmail: process.env.EMAIL_FROM || `"House of Paradise" <${process.env.SMTP_USER}>`
+      };
+      console.log('✅ Gmail SMTP configured (may fail on Render free tier)');
+    } catch (error) {
+      console.error('❌ Gmail SMTP setup error:', error.message);
     }
-  } catch (error) {
-    console.error('❌ Gmail SMTP Error:', error.message);
-    transporter = null;
+  }
+
+  if (!emailProvider) {
+    console.log('⚠️ No email provider configured - emails will be logged to console');
+    console.log('   To enable emails, set BREVO_API_KEY (recommended) or SMTP_USER + SMTP_PASS');
   }
 }
 
-// Initialize email transporter when server starts
-createEmailTransporter();
+// Send email using configured provider
+async function sendEmail(to, subject, htmlContent, textContent) {
+  // Brevo HTTP API
+  if (emailProvider?.type === 'brevo') {
+    try {
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+        sender: {
+          name: emailProvider.fromName,
+          email: emailProvider.fromEmail
+        },
+        to: [{ email: to }],
+        subject: subject,
+        htmlContent: htmlContent,
+        textContent: textContent || htmlContent.replace(/<[^>]*>/g, '')
+      }, {
+        headers: {
+          'api-key': emailProvider.apiKey,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+
+      console.log('✅ Email sent via Brevo');
+      console.log(`   To: ${to}`);
+      console.log(`   Message ID: ${response.data.messageId}`);
+      return { success: true, messageId: response.data.messageId };
+    } catch (error) {
+      console.error('❌ Brevo email error:', error.response?.data || error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Gmail SMTP
+  if (emailProvider?.type === 'smtp') {
+    try {
+      const info = await emailProvider.transporter.sendMail({
+        from: emailProvider.fromEmail,
+        to: to,
+        subject: subject,
+        text: textContent || htmlContent.replace(/<[^>]*>/g, ''),
+        html: htmlContent
+      });
+
+      console.log('✅ Email sent via Gmail SMTP');
+      console.log(`   To: ${to}`);
+      console.log(`   Message ID: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('❌ Gmail SMTP error:', error.message);
+      // Return error but don't throw - let caller decide what to do
+      return { success: false, error: error.message };
+    }
+  }
+
+  // No provider - log to console
+  console.log('=====================================================');
+  console.log('⚠️ No email provider - logging to console');
+  console.log(`📧 To: ${to}`);
+  console.log(`📋 Subject: ${subject}`);
+  console.log('=====================================================');
+  return { success: false, error: 'No email provider configured' };
+}
+
+// Initialize email provider when server starts
+initializeEmailProvider();
 
 async function sendVerificationCode(email, code, type, userName = null) {
   try {
@@ -774,42 +856,23 @@ async function sendVerificationCode(email, code, type, userName = null) {
 
     const htmlContent = generateVerificationEmail(code, displayName);
     const textContent = generateVerificationEmailText(code, displayName);
-    const fromEmail = process.env.EMAIL_FROM || '"House of Paradise" <service.houseofparadise@gmail.com>';
 
-    if (transporter) {
-      const info = await transporter.sendMail({
-        from: fromEmail,
-        to: email,
-        subject: subject,
-        text: textContent,
-        html: htmlContent
-      });
+    const result = await sendEmail(email, subject, htmlContent, textContent);
 
+    if (!result.success) {
+      // Log code to console as fallback
       console.log('=====================================================');
-      console.log('✅ Verification Email sent via Gmail!');
+      console.log('⚠️ Email send failed - showing code in console');
       console.log(`📧 To: ${email}`);
-      console.log(`🆔 Message ID: ${info.messageId}`);
+      console.log(`🔑 Code: ${code}`);
       console.log('=====================================================');
-      return true;
     }
 
-    // No email service - log to console
-    console.log('=====================================================');
-    console.log('⚠️  No email service - showing in console');
-    console.log(`📧 To: ${email}`);
-    console.log(`🔑 Code: ${code}`);
-    console.log('=====================================================');
-    return true;
+    return result.success;
 
   } catch (error) {
-    console.error('❌ Error sending verification email:', error.message);
-
-    // Fallback to console
-    console.log('=====================================================');
-    console.log('⚠️  Email failed - showing in console');
-    console.log(`📧 To: ${email}`);
-    console.log(`🔑 Code: ${code}`);
-    console.log('=====================================================');
+    console.error('❌ Error in sendVerificationCode:', error.message);
+    console.log(`📧 Fallback - Email: ${email}, Code: ${code}`);
     return false;
   }
 }
@@ -829,41 +892,23 @@ async function sendPasswordResetLink(email, resetLink) {
 
     const htmlContent = generatePasswordResetEmail(resetLink, displayName);
     const textContent = generatePasswordResetEmailText(resetLink, displayName);
-    const fromEmail = process.env.EMAIL_FROM || '"House of Paradise" <service.houseofparadise@gmail.com>';
 
-    if (transporter) {
-      const info = await transporter.sendMail({
-        from: fromEmail,
-        to: email,
-        subject: subject,
-        text: textContent,
-        html: htmlContent
-      });
+    const result = await sendEmail(email, subject, htmlContent, textContent);
 
+    if (!result.success) {
+      // Log link to console as fallback
       console.log('=====================================================');
-      console.log('✅ Password Reset Email sent via Gmail!');
+      console.log('⚠️ Email send failed - showing link in console');
       console.log(`📧 To: ${email}`);
-      console.log(`🆔 Message ID: ${info.messageId}`);
+      console.log(`🔗 Reset Link: ${resetLink}`);
       console.log('=====================================================');
-      return true;
     }
 
-    // No email service - log to console
-    console.log('=====================================================');
-    console.log('⚠️  No email service - showing in console');
-    console.log(`📧 To: ${email}`);
-    console.log(`🔗 Reset Link: ${resetLink}`);
-    console.log('=====================================================');
-    return true;
+    return result.success;
 
   } catch (error) {
-    console.error('❌ Error sending password reset email:', error.message);
-
-    console.log('=====================================================');
-    console.log('⚠️  Email failed - showing in console');
-    console.log(`📧 To: ${email}`);
-    console.log(`🔗 Reset Link: ${resetLink}`);
-    console.log('=====================================================');
+    console.error('❌ Error in sendPasswordResetLink:', error.message);
+    console.log(`📧 Fallback - Email: ${email}, Link: ${resetLink}`);
     return false;
   }
 }
@@ -2979,28 +3024,17 @@ app.post('/api/auth/request-unlock',
       // Send premium HoP unlock email
       try {
         const emailHTML = generateUnlockEmail(unlockCode, user.name || 'Traveler');
+        const textContent = `Your House of Paradise account unlock code is: ${unlockCode}. This code expires in 15 minutes.`;
 
-        // Build mail options with CID embedded logo
-        const unlockMailOptions = {
-          from: process.env.EMAIL_FROM || '"House of Paradise" <noreply@houseofparadise.com>',
-          to: email,
-          subject: '🔓 Unlock Your Account - House of Paradise',
-          html: emailHTML,
-          text: `Your House of Paradise account unlock code is: ${unlockCode}. This code expires in 15 minutes.`
-        };
+        const result = await sendEmail(email, '🔓 Unlock Your Account - House of Paradise', emailHTML, textContent);
 
-        // Add logo attachment for CID embedding
-        const logoAttachment = getLogoAttachment();
-        if (logoAttachment) {
-          unlockMailOptions.attachments = [logoAttachment];
+        if (!result.success) {
+          console.log('=====================================================');
+          console.log('⚠️ Unlock email failed - code in console');
+          console.log(`📧 To: ${email}`);
+          console.log(`🔑 Code: ${unlockCode}`);
+          console.log('=====================================================');
         }
-
-        await transporter.sendMail(unlockMailOptions);
-
-        console.log('=====================================================');
-        console.log('✅ HoP Account Unlock Email sent successfully!');
-        console.log(`📧 To: ${email}`);
-        console.log('=====================================================');
       } catch (emailError) {
         console.error('Failed to send unlock email:', emailError);
         // Don't expose email errors to user

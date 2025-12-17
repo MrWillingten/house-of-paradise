@@ -2,41 +2,56 @@ const axios = require('axios');
 
 /**
  * Create Admin User Script
- * Creates a default admin account for testing
+ * Creates an admin account for production
  */
 
+// Use production API or localhost
+const API_URL = process.env.API_URL || 'https://hop-api-gateway.onrender.com';
+
+// Admin credentials - change these!
+const ADMIN_EMAIL = 'aminzou54@gmail.com';
+const ADMIN_PASSWORD = 'HoP@Paradise2025!Secure';
+const ADMIN_NAME = 'Administrator';
+
 async function createAdmin() {
-  console.log('🔐 Creating admin account...\n');
+  console.log('🔐 Creating admin account...');
+  console.log(`📡 API URL: ${API_URL}\n`);
 
   try {
-    const response = await axios.post('http://localhost:8080/api/auth/register', {
-      email: 'admin@travelhub.com',
-      password: 'admin123',
-      name: 'System Administrator'
+    // Step 1: Register the user
+    console.log('Step 1: Registering user...');
+    const response = await axios.post(`${API_URL}/api/auth/register`, {
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+      name: ADMIN_NAME
     });
 
     if (response.data.success) {
-      // Now update the user to admin role directly in auth service
-      const userId = response.data.data.user.id;
-      const token = response.data.data.token;
-
-      console.log('✅ User created successfully!');
+      console.log('✅ User registered successfully!');
       console.log(`\n📋 Admin Account Details:`);
-      console.log(`   Email: admin@travelhub.com`);
-      console.log(`   Password: admin123`);
-      console.log(`   User ID: ${userId}`);
-      console.log(`\n⚠️  IMPORTANT: Change the password after first login!`);
-      console.log(`\n💡 To promote this user to admin, run:`);
-      console.log(`   docker exec -it mongodb mongosh authdb --eval "db.users.updateOne({email: 'admin@travelhub.com'}, {\\$set: {role: 'admin'}})" \n`);
+      console.log(`   Email: ${ADMIN_EMAIL}`);
+      console.log(`   Password: ${ADMIN_PASSWORD}`);
+      console.log(`   Name: ${ADMIN_NAME}`);
+      console.log(`\n⚠️  IMPORTANT: You need to:`);
+      console.log(`   1. Verify your email (check inbox for verification code)`);
+      console.log(`   2. Manually set role to 'admin' in MongoDB Atlas`);
+      console.log(`\n💡 To promote to admin in MongoDB Atlas:`);
+      console.log(`   Go to MongoDB Atlas → Browse Collections → authdb → users`);
+      console.log(`   Find the user with email: ${ADMIN_EMAIL}`);
+      console.log(`   Edit the document and change "role": "user" to "role": "admin"`);
     }
   } catch (error) {
-    if (error.response?.data?.error === 'User already exists') {
-      console.log('⚠️  Admin user already exists!');
+    if (error.response?.data?.message?.includes('already exists') ||
+        error.response?.data?.error?.includes('already exists')) {
+      console.log('⚠️  User already exists!');
       console.log(`\n📋 Use these credentials:`);
-      console.log(`   Email: admin@travelhub.com`);
-      console.log(`   Password: admin123\n`);
+      console.log(`   Email: ${ADMIN_EMAIL}`);
+      console.log(`   Password: (the one you set when registering)\n`);
+      console.log(`\n💡 To promote to admin in MongoDB Atlas:`);
+      console.log(`   Go to MongoDB Atlas → Browse Collections → authdb → users`);
+      console.log(`   Find the user and change "role": "user" to "role": "admin"`);
     } else {
-      console.error('❌ Error:', error.response?.data?.error || error.message);
+      console.error('❌ Error:', error.response?.data?.message || error.response?.data?.error || error.message);
     }
   }
 }
