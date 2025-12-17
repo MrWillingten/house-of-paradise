@@ -727,9 +727,11 @@ async function createEmailTransporter() {
     if (hasSmtpCredentials) {
       console.log('📧 Configuring Gmail SMTP...');
       console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
+      console.log(`   SMTP_PASS length: ${process.env.SMTP_PASS.length} chars`);
 
       // Remove spaces from app password
       const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
+      console.log(`   SMTP_PASS (no spaces) length: ${smtpPass.length} chars`);
 
       transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -739,11 +741,12 @@ async function createEmailTransporter() {
         }
       });
 
-      // Verify connection
-      await transporter.verify();
-      console.log('✅ Gmail SMTP is ready');
+      // Skip verify - just create transporter and test on first email
+      console.log('✅ Gmail SMTP transporter created (will test on first send)');
     } else {
       console.log('⚠️ No SMTP credentials - emails will be logged to console');
+      console.log(`   SMTP_USER set: ${!!process.env.SMTP_USER}`);
+      console.log(`   SMTP_PASS set: ${!!process.env.SMTP_PASS}`);
     }
   } catch (error) {
     console.error('❌ Gmail SMTP Error:', error.message);
