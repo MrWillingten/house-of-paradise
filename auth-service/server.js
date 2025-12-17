@@ -8,7 +8,6 @@ const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
-const { Resend } = require('resend');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -718,49 +717,36 @@ async function sendSMSCode(phone, countryCode, code) {
   }
 }
 
-// Configure email - Resend API (primary) or SMTP (fallback)
-let resend = null;
+// Configure Gmail SMTP email transporter
 let transporter = null;
 
 async function createEmailTransporter() {
   try {
-    // Check for Resend API key first (preferred method)
-    if (process.env.RESEND_API_KEY) {
-      console.log('📧 Configuring email with Resend API...');
-      resend = new Resend(process.env.RESEND_API_KEY);
-      console.log('✅ Resend email service is ready');
-      return;
-    }
-
-    // Fallback to SMTP if no Resend API key
     const hasSmtpCredentials = process.env.SMTP_USER && process.env.SMTP_PASS;
 
     if (hasSmtpCredentials) {
-      console.log('📧 Configuring email with SMTP...');
+      console.log('📧 Configuring Gmail SMTP...');
+      console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
+
+      // Remove spaces from app password
       const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
-      const useSSL = process.env.SMTP_PORT === '465' || process.env.SMTP_SECURE === 'true';
 
       transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '465'),
-        secure: useSSL,
+        service: 'gmail',
         auth: {
           user: process.env.SMTP_USER,
           pass: smtpPass
-        },
-        connectionTimeout: 30000,
-        greetingTimeout: 30000,
-        socketTimeout: 30000,
-        tls: { rejectUnauthorized: false }
+        }
       });
 
+      // Verify connection
       await transporter.verify();
-      console.log('✅ SMTP Email transporter is ready');
+      console.log('✅ Gmail SMTP is ready');
     } else {
-      console.log('⚠️ No email configuration found - emails will be logged to console');
+      console.log('⚠️ No SMTP credentials - emails will be logged to console');
     }
   } catch (error) {
-    console.error('❌ Error creating email transporter:', error.message);
+    console.error('❌ Gmail SMTP Error:', error.message);
     transporter = null;
   }
 }
@@ -785,31 +771,8 @@ async function sendVerificationCode(email, code, type, userName = null) {
 
     const htmlContent = generateVerificationEmail(code, displayName);
     const textContent = generateVerificationEmailText(code, displayName);
-    const fromEmail = process.env.EMAIL_FROM || 'House of Paradise <onboarding@resend.dev>';
+    const fromEmail = process.env.EMAIL_FROM || '"House of Paradise" <service.houseofparadise@gmail.com>';
 
-    // Use Resend if available (preferred)
-    if (resend) {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [email],
-        subject: subject,
-        html: htmlContent,
-        text: textContent
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log('=====================================================');
-      console.log('✅ Verification Email sent via Resend!');
-      console.log(`📧 To: ${email}`);
-      console.log(`🆔 ID: ${data.id}`);
-      console.log('=====================================================');
-      return true;
-    }
-
-    // Fallback to SMTP transporter
     if (transporter) {
       const info = await transporter.sendMail({
         from: fromEmail,
@@ -820,14 +783,14 @@ async function sendVerificationCode(email, code, type, userName = null) {
       });
 
       console.log('=====================================================');
-      console.log('✅ Verification Email sent via SMTP!');
+      console.log('✅ Verification Email sent via Gmail!');
       console.log(`📧 To: ${email}`);
       console.log(`🆔 Message ID: ${info.messageId}`);
       console.log('=====================================================');
       return true;
     }
 
-    // No email service configured - log to console
+    // No email service - log to console
     console.log('=====================================================');
     console.log('⚠️  No email service - showing in console');
     console.log(`📧 To: ${email}`);
@@ -863,31 +826,8 @@ async function sendPasswordResetLink(email, resetLink) {
 
     const htmlContent = generatePasswordResetEmail(resetLink, displayName);
     const textContent = generatePasswordResetEmailText(resetLink, displayName);
-    const fromEmail = process.env.EMAIL_FROM || 'House of Paradise <onboarding@resend.dev>';
+    const fromEmail = process.env.EMAIL_FROM || '"House of Paradise" <service.houseofparadise@gmail.com>';
 
-    // Use Resend if available (preferred)
-    if (resend) {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [email],
-        subject: subject,
-        html: htmlContent,
-        text: textContent
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log('=====================================================');
-      console.log('✅ Password Reset Email sent via Resend!');
-      console.log(`📧 To: ${email}`);
-      console.log(`🆔 ID: ${data.id}`);
-      console.log('=====================================================');
-      return true;
-    }
-
-    // Fallback to SMTP transporter
     if (transporter) {
       const info = await transporter.sendMail({
         from: fromEmail,
@@ -898,7 +838,7 @@ async function sendPasswordResetLink(email, resetLink) {
       });
 
       console.log('=====================================================');
-      console.log('✅ Password Reset Email sent via SMTP!');
+      console.log('✅ Password Reset Email sent via Gmail!');
       console.log(`📧 To: ${email}`);
       console.log(`🆔 Message ID: ${info.messageId}`);
       console.log('=====================================================');
