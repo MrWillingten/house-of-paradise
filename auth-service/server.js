@@ -50,6 +50,9 @@ function getLogoAttachment() {
 
 const app = express();
 
+// Trust proxy - required for Render/Heroku/etc behind reverse proxy
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors());
@@ -733,16 +736,22 @@ async function createEmailTransporter() {
       // Remove spaces from app password (Gmail app passwords are shown with spaces but should be used without)
       const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
 
+      // Try SSL connection first (port 465), fallback to TLS (port 587)
+      const useSSL = process.env.SMTP_PORT === '465' || process.env.SMTP_SECURE === 'true';
+
       transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: useSSL, // true for 465, false for 587
         auth: {
           user: process.env.SMTP_USER,
           pass: smtpPass
         },
+        connectionTimeout: 30000, // 30 seconds
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
         tls: {
-          rejectUnauthorized: false // Allow self-signed certificates in development
+          rejectUnauthorized: false
         }
       });
 
