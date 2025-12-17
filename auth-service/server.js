@@ -8,6 +8,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -717,71 +718,49 @@ async function sendSMSCode(phone, countryCode, code) {
   }
 }
 
-// Configure email transporter
-let transporter;
+// Configure email - Resend API (primary) or SMTP (fallback)
+let resend = null;
+let transporter = null;
 
 async function createEmailTransporter() {
   try {
-    // Check if we have SMTP credentials
+    // Check for Resend API key first (preferred method)
+    if (process.env.RESEND_API_KEY) {
+      console.log('📧 Configuring email with Resend API...');
+      resend = new Resend(process.env.RESEND_API_KEY);
+      console.log('✅ Resend email service is ready');
+      return;
+    }
+
+    // Fallback to SMTP if no Resend API key
     const hasSmtpCredentials = process.env.SMTP_USER && process.env.SMTP_PASS;
 
     if (hasSmtpCredentials) {
-      // Use configured SMTP (Gmail or other provider)
       console.log('📧 Configuring email with SMTP...');
-      console.log(`   SMTP_HOST: ${process.env.SMTP_HOST}`);
-      console.log(`   SMTP_PORT: ${process.env.SMTP_PORT}`);
-      console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
-      console.log(`   SMTP_PASS: ${process.env.SMTP_PASS ? '***SET***' : 'NOT SET'}`);
-
-      // Remove spaces from app password (Gmail app passwords are shown with spaces but should be used without)
       const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
-
-      // Try SSL connection first (port 465), fallback to TLS (port 587)
       const useSSL = process.env.SMTP_PORT === '465' || process.env.SMTP_SECURE === 'true';
 
       transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '465'),
-        secure: useSSL, // true for 465, false for 587
+        secure: useSSL,
         auth: {
           user: process.env.SMTP_USER,
           pass: smtpPass
         },
-        connectionTimeout: 30000, // 30 seconds
+        connectionTimeout: 30000,
         greetingTimeout: 30000,
         socketTimeout: 30000,
-        tls: {
-          rejectUnauthorized: false
-        }
+        tls: { rejectUnauthorized: false }
       });
 
-      // Verify connection configuration
       await transporter.verify();
       console.log('✅ SMTP Email transporter is ready');
     } else {
-      // Use Ethereal email for testing (creates a test account)
-      console.log('📧 Creating Ethereal test email account...');
-      const testAccount = await nodemailer.createTestAccount();
-
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-
-      console.log('✅ Ethereal Email transporter is ready');
-      console.log('📧 Test email credentials:');
-      console.log(`   User: ${testAccount.user}`);
-      console.log(`   Pass: ${testAccount.pass}`);
-      console.log('   View emails at: https://ethereal.email/');
+      console.log('⚠️ No email configuration found - emails will be logged to console');
     }
   } catch (error) {
     console.error('❌ Error creating email transporter:', error.message);
-    // Fallback to console logging if email setup fails
     transporter = null;
   }
 }
@@ -791,10 +770,9 @@ createEmailTransporter();
 
 async function sendVerificationCode(email, code, type, userName = null) {
   try {
-    // Determine email subject - Premium HoP branding
     const subject = '✨ Verify Your Email - House of Paradise';
 
-    // If userName not provided, try to get it from the database
+    // Get display name
     let displayName = userName;
     if (!displayName) {
       try {
@@ -805,69 +783,67 @@ async function sendVerificationCode(email, code, type, userName = null) {
       }
     }
 
-    // Generate premium HoP email content
     const htmlContent = generateVerificationEmail(code, displayName);
     const textContent = generateVerificationEmailText(code, displayName);
+    const fromEmail = process.env.EMAIL_FROM || 'House of Paradise <onboarding@resend.dev>';
 
-    // If transporter is available, send actual email
+    // Use Resend if available (preferred)
+    if (resend) {
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: [email],
+        subject: subject,
+        html: htmlContent,
+        text: textContent
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log('=====================================================');
+      console.log('✅ Verification Email sent via Resend!');
+      console.log(`📧 To: ${email}`);
+      console.log(`🆔 ID: ${data.id}`);
+      console.log('=====================================================');
+      return true;
+    }
+
+    // Fallback to SMTP transporter
     if (transporter) {
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || '"House of Paradise" <noreply@houseofparadise.com>',
+      const info = await transporter.sendMail({
+        from: fromEmail,
         to: email,
         subject: subject,
         text: textContent,
         html: htmlContent
-      };
-
-      // Add logo attachment for CID embedding (works with Gmail and all email clients)
-      const logoAttachment = getLogoAttachment();
-      if (logoAttachment) {
-        mailOptions.attachments = [logoAttachment];
-      }
-
-      const info = await transporter.sendMail(mailOptions);
+      });
 
       console.log('=====================================================');
-      console.log('✅ HoP Verification Email sent successfully!');
+      console.log('✅ Verification Email sent via SMTP!');
       console.log(`📧 To: ${email}`);
-      console.log(`📋 Subject: ${subject}`);
       console.log(`🆔 Message ID: ${info.messageId}`);
-      console.log(`📤 Response: ${info.response || 'No response'}`);
-      console.log(`✉️ Accepted: ${JSON.stringify(info.accepted)}`);
-
-      // If using Ethereal, provide preview URL
-      if (info.messageId && process.env.SMTP_HOST !== 'smtp.gmail.com') {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log(`🔗 Preview URL: ${previewUrl}`);
-        }
-      }
-      console.log('=====================================================');
-
-      return true;
-    } else {
-      // Fallback to console logging if email is not configured
-      console.log('=====================================================');
-      console.log('⚠️  Email transporter not available - showing in console');
-      console.log(`📧 To: ${email}`);
-      console.log(`📋 Subject: ${subject}`);
-      console.log(`🔑 Verification Code: ${code}`);
-      console.log('⏰ This code will expire in 10 minutes');
       console.log('=====================================================');
       return true;
     }
+
+    // No email service configured - log to console
+    console.log('=====================================================');
+    console.log('⚠️  No email service - showing in console');
+    console.log(`📧 To: ${email}`);
+    console.log(`🔑 Code: ${code}`);
+    console.log('=====================================================');
+    return true;
+
   } catch (error) {
     console.error('❌ Error sending verification email:', error.message);
-    console.error('❌ Full error:', JSON.stringify(error, null, 2));
 
-    // Fallback to console logging on error
+    // Fallback to console
     console.log('=====================================================');
-    console.log('⚠️  Email sending failed - showing in console');
-    console.log(`📧 Verification Code for ${email}`);
+    console.log('⚠️  Email failed - showing in console');
+    console.log(`📧 To: ${email}`);
     console.log(`🔑 Code: ${code}`);
-    console.log('⏰ This code will expire in 10 minutes');
     console.log('=====================================================');
-
     return false;
   }
 }
@@ -877,7 +853,6 @@ async function sendPasswordResetLink(email, resetLink) {
   try {
     const subject = '🔐 Reset Your Password - House of Paradise';
 
-    // Get user name
     let displayName = 'Traveler';
     try {
       const user = await User.findOne({ email });
@@ -886,69 +861,66 @@ async function sendPasswordResetLink(email, resetLink) {
       displayName = 'Traveler';
     }
 
-    // Generate premium HoP email content
     const htmlContent = generatePasswordResetEmail(resetLink, displayName);
     const textContent = generatePasswordResetEmailText(resetLink, displayName);
+    const fromEmail = process.env.EMAIL_FROM || 'House of Paradise <onboarding@resend.dev>';
 
-    // If transporter is available, send actual email
+    // Use Resend if available (preferred)
+    if (resend) {
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: [email],
+        subject: subject,
+        html: htmlContent,
+        text: textContent
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      console.log('=====================================================');
+      console.log('✅ Password Reset Email sent via Resend!');
+      console.log(`📧 To: ${email}`);
+      console.log(`🆔 ID: ${data.id}`);
+      console.log('=====================================================');
+      return true;
+    }
+
+    // Fallback to SMTP transporter
     if (transporter) {
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || '"House of Paradise" <noreply@houseofparadise.com>',
+      const info = await transporter.sendMail({
+        from: fromEmail,
         to: email,
         subject: subject,
         text: textContent,
         html: htmlContent
-      };
-
-      // Add logo attachment for CID embedding (works with Gmail and all email clients)
-      const logoAttachment = getLogoAttachment();
-      if (logoAttachment) {
-        mailOptions.attachments = [logoAttachment];
-      }
-
-      const info = await transporter.sendMail(mailOptions);
+      });
 
       console.log('=====================================================');
-      console.log('✅ HoP Password Reset Email sent successfully!');
+      console.log('✅ Password Reset Email sent via SMTP!');
       console.log(`📧 To: ${email}`);
-      console.log(`📋 Subject: ${subject}`);
       console.log(`🆔 Message ID: ${info.messageId}`);
-      console.log(`📤 Response: ${info.response || 'No response'}`);
-      console.log(`✉️ Accepted: ${JSON.stringify(info.accepted)}`);
-      console.log(`❌ Rejected: ${JSON.stringify(info.rejected)}`);
-
-      // If using Ethereal, provide preview URL
-      if (info.messageId && process.env.SMTP_HOST !== 'smtp.gmail.com') {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log(`🔗 Preview URL: ${previewUrl}`);
-        }
-      }
-      console.log('=====================================================');
-
-      return true;
-    } else {
-      // Fallback to console logging if email is not configured
-      console.log('=====================================================');
-      console.log('⚠️  Email transporter not available - showing in console');
-      console.log(`📧 To: ${email}`);
-      console.log(`📋 Subject: ${subject}`);
-      console.log(`🔗 Reset Link: ${resetLink}`);
-      console.log('⏰ This link will expire in 1 hour');
       console.log('=====================================================');
       return true;
     }
+
+    // No email service - log to console
+    console.log('=====================================================');
+    console.log('⚠️  No email service - showing in console');
+    console.log(`📧 To: ${email}`);
+    console.log(`🔗 Reset Link: ${resetLink}`);
+    console.log('=====================================================');
+    return true;
+
   } catch (error) {
-    console.error('❌ Error sending password reset email:', error);
+    console.error('❌ Error sending password reset email:', error.message);
 
-    // Fallback to console logging on error
     console.log('=====================================================');
-    console.log('⚠️  Email sending failed - showing in console');
-    console.log(`📧 Password reset link for ${email}`);
-    console.log(`🔗 Link: ${resetLink}`);
-    console.log('⏰ This link will expire in 1 hour');
+    console.log('⚠️  Email failed - showing in console');
+    console.log(`📧 To: ${email}`);
+    console.log(`🔗 Reset Link: ${resetLink}`);
     console.log('=====================================================');
-
     return false;
   }
 }
