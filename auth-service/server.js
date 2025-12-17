@@ -725,13 +725,21 @@ async function createEmailTransporter() {
     if (hasSmtpCredentials) {
       // Use configured SMTP (Gmail or other provider)
       console.log('📧 Configuring email with SMTP...');
+      console.log(`   SMTP_HOST: ${process.env.SMTP_HOST}`);
+      console.log(`   SMTP_PORT: ${process.env.SMTP_PORT}`);
+      console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
+      console.log(`   SMTP_PASS: ${process.env.SMTP_PASS ? '***SET***' : 'NOT SET'}`);
+
+      // Remove spaces from app password (Gmail app passwords are shown with spaces but should be used without)
+      const smtpPass = process.env.SMTP_PASS.replace(/\s/g, '');
+
       transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
+          pass: smtpPass
         },
         tls: {
           rejectUnauthorized: false // Allow self-signed certificates in development
@@ -840,7 +848,8 @@ async function sendVerificationCode(email, code, type, userName = null) {
       return true;
     }
   } catch (error) {
-    console.error('❌ Error sending verification email:', error);
+    console.error('❌ Error sending verification email:', error.message);
+    console.error('❌ Full error:', JSON.stringify(error, null, 2));
 
     // Fallback to console logging on error
     console.log('=====================================================');
