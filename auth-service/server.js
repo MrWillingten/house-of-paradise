@@ -1084,33 +1084,16 @@ app.post('/api/auth/register',
       // Hash password with 12 rounds
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Check if we should skip email verification (when email service not fully configured)
-      const skipEmailVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
-
-      // Create new user
+      // Create new user (unverified)
       const user = new User({
         email,
         password: hashedPassword,
         name,
-        isVerified: skipEmailVerification, // Auto-verify if email is disabled
+        isVerified: false,
         passwordHistory: []
       });
 
       await user.save();
-
-      // If skipping email verification, return success immediately
-      if (skipEmailVerification) {
-        console.log(`✅ User ${email} auto-verified (SKIP_EMAIL_VERIFICATION=true)`);
-        return res.status(201).json({
-          success: true,
-          message: 'Registration successful. You can now login.',
-          data: {
-            email: user.email,
-            name: user.name,
-            requiresVerification: false
-          }
-        });
-      }
 
       // Generate verification code
       const code = generateVerificationCode();
