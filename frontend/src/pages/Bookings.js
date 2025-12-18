@@ -423,14 +423,13 @@ function Bookings() {
                   return (
                     <div
                       key={booking._id || booking.id}
-                      className="scroll-reveal spotlight-card hover-lift"
+                      className="spotlight-card hover-lift"
                       style={{
                         ...styles.card,
                         background: darkMode
                           ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
                           : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
                         border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
-                        animationDelay: `${index * 0.1}s`,
                       }}
                     >
                       <div style={{
