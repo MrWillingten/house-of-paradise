@@ -211,10 +211,10 @@ function AdminDashboard() {
 
   // User Management Functions
   const handlePromoteUser = async (userId) => {
-    if (!window.confirm('Promote this user to admin?')) return;
+    if (!window.confirm('Promote this user to Moderator?')) return;
     try {
       await adminService.promoteUser(userId);
-      showNotification('User promoted to admin!');
+      showNotification('User promoted to Moderator!');
       fetchAllData();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Failed to promote user', 'error');
@@ -222,10 +222,16 @@ function AdminDashboard() {
   };
 
   const handleDemoteUser = async (userId) => {
-    if (!window.confirm('Demote this admin to regular user?')) return;
+    // Prevent admin from demoting themselves
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (currentUser.id === userId) {
+      showNotification('You cannot demote yourself!', 'error');
+      return;
+    }
+    if (!window.confirm('Demote this user to regular user?')) return;
     try {
       await adminService.demoteUser(userId);
-      showNotification('Admin demoted to user!');
+      showNotification('User demoted to regular user!');
       fetchAllData();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Failed to demote user', 'error');
@@ -378,8 +384,8 @@ function AdminDashboard() {
         addOutput('USER MANAGEMENT:', 'system');
         addOutput('  users              - List all users');
         addOutput('  user <id>          - Get user details');
-        addOutput('  promote <id>       - Promote user to admin');
-        addOutput('  demote <id>        - Demote admin to user');
+        addOutput('  promote <id>       - Promote user to moderator');
+        addOutput('  demote <id>        - Demote user to regular user');
         addOutput('  deleteuser <id>    - Delete a user');
         addOutput('');
         addOutput('DATA MANAGEMENT:', 'system');
@@ -398,7 +404,8 @@ function AdminDashboard() {
       case 'users':
         addOutput(`Total users: ${users.length}`, 'success');
         users.slice(0, 10).forEach((u, i) => {
-          addOutput(`[${i + 1}] ${u.name} (${u.email}) - ${u.role === 'admin' ? 'ADMIN' : 'User'}`);
+          const roleDisplay = u.role === 'admin' ? 'ADMIN' : u.role === 'moderator' ? 'MOD' : 'User';
+          addOutput(`[${i + 1}] ${u.name} (${u.email}) - ${roleDisplay}`);
         });
         if (users.length > 10) addOutput(`... and ${users.length - 10} more`);
         break;
@@ -427,7 +434,7 @@ function AdminDashboard() {
         } else {
           try {
             await adminService.promoteUser(args[0]);
-            addOutput('User promoted to admin!', 'success');
+            addOutput('User promoted to Moderator!', 'success');
             fetchAllData();
           } catch (err) {
             addOutput(`Error: ${err.response?.data?.error || err.message}`, 'error');
@@ -439,9 +446,15 @@ function AdminDashboard() {
         if (!args[0]) {
           addOutput('Usage: demote <userId>', 'error');
         } else {
+          // Prevent admin from demoting themselves
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser.id === args[0]) {
+            addOutput('Error: You cannot demote yourself!', 'error');
+            break;
+          }
           try {
             await adminService.demoteUser(args[0]);
-            addOutput('Admin demoted to user!', 'success');
+            addOutput('User demoted to regular user!', 'success');
             fetchAllData();
           } catch (err) {
             addOutput(`Error: ${err.response?.data?.error || err.message}`, 'error');
@@ -799,9 +812,9 @@ function AdminDashboard() {
                       </div>
                       <div style={{
                         ...styles.roleBadge,
-                        background: user.role === 'admin' ? '#10b981' : '#6b7280'
+                        background: user.role === 'admin' ? '#10b981' : user.role === 'moderator' ? '#8b5cf6' : '#6b7280'
                       }}>
-                        {user.role}
+                        {user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Mod' : 'User'}
                       </div>
                     </div>
                   ))}
@@ -868,9 +881,9 @@ function AdminDashboard() {
                     <div style={{ flex: 1 }}>
                       <span style={{
                         ...styles.badge,
-                        background: user.role === 'admin' ? '#10b981' : '#6b7280'
+                        background: user.role === 'admin' ? '#10b981' : user.role === 'moderator' ? '#8b5cf6' : '#6b7280'
                       }}>
-                        {user.role === 'admin' ? 'Admin' : 'User'}
+                        {user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Moderator' : 'User'}
                       </span>
                     </div>
                     <div style={{ flex: 1 }}>
@@ -892,23 +905,25 @@ function AdminDashboard() {
                       >
                         <Eye size={16} />
                       </button>
-                      {user.role === 'admin' ? (
+                      {/* Show demote for admin/moderator (but not for current user) */}
+                      {(user.role === 'admin' || user.role === 'moderator') &&
+                       user._id !== JSON.parse(localStorage.getItem('user') || '{}').id ? (
                         <button
                           onClick={() => handleDemoteUser(user._id)}
                           style={{ ...styles.actionBtn, background: '#f59e0b' }}
-                          title="Demote"
+                          title="Demote to User"
                         >
                           <ShieldOff size={16} />
                         </button>
-                      ) : (
+                      ) : user.role === 'user' ? (
                         <button
                           onClick={() => handlePromoteUser(user._id)}
                           style={{ ...styles.actionBtn, background: '#10b981' }}
-                          title="Promote"
+                          title="Promote to Moderator"
                         >
                           <Shield size={16} />
                         </button>
-                      )}
+                      ) : null}
                       <button
                         onClick={() => openModal('password', user)}
                         style={{ ...styles.actionBtn, background: '#8b5cf6' }}

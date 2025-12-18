@@ -193,7 +193,7 @@ export const adminService = {
   // User Management
   getAllUsers: () => api.get('/api/admin/users'),
   getUser: (id) => api.get(`/api/admin/users/${id}`),
-  promoteUser: (id) => api.patch(`/api/admin/users/${id}/role`, { role: 'admin' }),
+  promoteUser: (id) => api.patch(`/api/admin/users/${id}/role`, { role: 'moderator' }),
   demoteUser: (id) => api.patch(`/api/admin/users/${id}/role`, { role: 'user' }),
   deleteUser: (id) => api.delete(`/api/admin/users/${id}`),
   resetPassword: (id, password) => api.patch(`/api/admin/users/${id}/credentials`, { password }),

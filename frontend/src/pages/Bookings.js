@@ -52,19 +52,40 @@ function Bookings() {
         return;
       }
 
-      const [bookingsRes, paymentsRes] = await Promise.all([
-        bookingService.getUserBookings(userId),
-        paymentService.getUserPayments(userId),
-      ]);
+      // Fetch bookings and payments separately to handle errors independently
+      let bookingsData = [];
+      let paymentsData = [];
 
-      console.log('Bookings response:', bookingsRes.data);
-      console.log('Payments response:', paymentsRes.data);
+      try {
+        const bookingsRes = await bookingService.getUserBookings(userId);
+        console.log('Bookings response:', bookingsRes.data);
+        bookingsData = bookingsRes.data?.data || bookingsRes.data || [];
+        // Ensure it's an array
+        if (!Array.isArray(bookingsData)) {
+          console.warn('Bookings data is not an array:', bookingsData);
+          bookingsData = [];
+        }
+      } catch (bookingError) {
+        console.error('Error fetching bookings:', bookingError);
+      }
 
-      setBookings(bookingsRes.data.data || []);
-      setPayments(paymentsRes.data.data || []);
+      try {
+        const paymentsRes = await paymentService.getUserPayments(userId);
+        console.log('Payments response:', paymentsRes.data);
+        paymentsData = paymentsRes.data?.data || paymentsRes.data || [];
+        // Ensure it's an array
+        if (!Array.isArray(paymentsData)) {
+          console.warn('Payments data is not an array:', paymentsData);
+          paymentsData = [];
+        }
+      } catch (paymentError) {
+        console.error('Error fetching payments:', paymentError);
+      }
+
+      setBookings(bookingsData);
+      setPayments(paymentsData);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
-      // Set empty arrays on error to prevent rendering issues
+      console.error('Error in fetchData:', error);
       setBookings([]);
       setPayments([]);
     } finally {
