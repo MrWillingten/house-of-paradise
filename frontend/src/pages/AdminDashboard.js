@@ -14,10 +14,18 @@ import {
 function AdminDashboard() {
   const navigate = useNavigate();
 
-  // Dark mode from localStorage
+  // Dark mode linked to main app user preference
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('adminDarkMode');
-    return saved ? JSON.parse(saved) : true;
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        return user.darkMode !== undefined ? user.darkMode : true;
+      } catch {
+        return true;
+      }
+    }
+    return true;
   });
 
   // Main state
@@ -68,14 +76,32 @@ function AdminDashboard() {
     payment: 'healthy'
   });
 
-  // Save dark mode preference
+  // Sync dark mode with user preference in localStorage (linked to Navbar toggle)
   useEffect(() => {
-    localStorage.setItem('adminDarkMode', JSON.stringify(darkMode));
+    // Update body class for admin styling
     if (darkMode) {
       document.body.classList.add('admin-dark-mode');
     } else {
       document.body.classList.remove('admin-dark-mode');
     }
+
+    // Listen for changes to user preference from Navbar toggle
+    const handleStorageChange = () => {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          if (user.darkMode !== undefined && user.darkMode !== darkMode) {
+            setDarkMode(user.darkMode);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [darkMode]);
 
   // Check admin access
@@ -565,9 +591,6 @@ function AdminDashboard() {
             <button onClick={fetchAllData} style={styles.iconButton} title="Refresh">
               <RefreshCw size={18} className={loading ? 'spin' : ''} />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} style={styles.iconButton} title="Toggle Theme">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <div style={styles.adminBadge}>
               <Shield size={14} />
               <span>Admin</span>
@@ -598,9 +621,9 @@ function AdminDashboard() {
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div style={styles.dashboard}>
-              {/* Stats Grid */}
+              {/* Stats Grid - Emerald Green Premium Theme */}
               <div style={styles.statsGrid}>
-                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)' }}>
                   <div style={styles.statIcon}><Users size={32} /></div>
                   <div style={styles.statInfo}>
                     <div style={styles.statNumber}>{stats?.totalUsers || 0}</div>
@@ -608,7 +631,7 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)' }}>
                   <div style={styles.statIcon}><Shield size={32} /></div>
                   <div style={styles.statInfo}>
                     <div style={styles.statNumber}>{stats?.totalAdmins || 0}</div>
@@ -616,7 +639,7 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)' }}>
                   <div style={styles.statIcon}><Hotel size={32} /></div>
                   <div style={styles.statInfo}>
                     <div style={styles.statNumber}>{stats?.totalHotels || 0}</div>
@@ -624,7 +647,7 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+                <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #6ee7b7 0%, #34d399 100%)' }}>
                   <div style={styles.statIcon}><Plane size={32} /></div>
                   <div style={styles.statInfo}>
                     <div style={styles.statNumber}>{stats?.totalTrips || 0}</div>
@@ -1002,20 +1025,24 @@ function AdminDashboard() {
                 <div style={styles.settingItem}>
                   <div style={styles.settingInfo}>
                     <div style={styles.settingLabel}>Dark Mode</div>
-                    <div style={styles.settingDescription}>Enable dark theme for the admin panel</div>
+                    <div style={styles.settingDescription}>
+                      {darkMode ? 'Enabled' : 'Disabled'} - Use the toggle in the main Navbar to change
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    style={{
-                      ...styles.toggleButton,
-                      background: darkMode ? '#10b981' : '#e5e7eb'
-                    }}
-                  >
-                    <div style={{
-                      ...styles.toggleKnob,
-                      transform: darkMode ? 'translateX(24px)' : 'translateX(0)'
-                    }} />
-                  </button>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.375rem 0.75rem',
+                    background: darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                    borderRadius: '20px',
+                    color: darkMode ? '#10b981' : '#6b7280',
+                    fontSize: '0.75rem',
+                    fontWeight: '600'
+                  }}>
+                    {darkMode ? <Moon size={14} /> : <Sun size={14} />}
+                    {darkMode ? 'Dark' : 'Light'}
+                  </div>
                 </div>
               </div>
 
