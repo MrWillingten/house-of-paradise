@@ -17,10 +17,20 @@ function Loyalty() {
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview'); // overview, achievements, history, rewards
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [darkMode, setDarkMode] = useState(() => {
     const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
     return savedUser.darkMode || false;
   });
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -100,19 +110,19 @@ function Loyalty() {
     container: {
       minHeight: '100vh',
       backgroundColor: darkMode ? '#000000' : '#fafafa',
-      paddingTop: '80px',
-      paddingBottom: '60px'
+      paddingTop: isMobile ? '70px' : '80px',
+      paddingBottom: isMobile ? '30px' : '60px'
     },
     content: {
       maxWidth: '1400px',
       margin: '0 auto',
-      padding: '0 20px'
+      padding: isMobile ? '0 12px' : '0 20px'
     },
     header: {
-      marginBottom: '40px'
+      marginBottom: isMobile ? '24px' : '40px'
     },
     title: {
-      fontSize: '42px',
+      fontSize: isMobile ? '28px' : '42px',
       fontWeight: '800',
       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       WebkitBackgroundClip: 'text',
@@ -120,20 +130,20 @@ function Loyalty() {
       marginBottom: '10px'
     },
     subtitle: {
-      fontSize: '18px',
+      fontSize: isMobile ? '14px' : '18px',
       color: darkMode ? '#9ca3af' : '#6b7280',
       fontWeight: '400'
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '24px',
-      marginBottom: '40px'
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: isMobile ? '16px' : '24px',
+      marginBottom: isMobile ? '24px' : '40px'
     },
     card: {
       backgroundColor: darkMode ? '#111111' : '#ffffff',
-      borderRadius: '20px',
-      padding: '32px',
+      borderRadius: isMobile ? '16px' : '20px',
+      padding: isMobile ? '20px' : '32px',
       boxShadow: darkMode
         ? '0 4px 6px rgba(16, 185, 129, 0.1)'
         : '0 4px 6px rgba(0, 0, 0, 0.05)',
@@ -164,12 +174,12 @@ function Loyalty() {
       fontSize: '24px'
     },
     tierName: {
-      fontSize: '28px',
+      fontSize: isMobile ? '22px' : '28px',
       fontWeight: '700',
       color: darkMode ? '#ffffff' : '#111827'
     },
     pointsDisplay: {
-      fontSize: '48px',
+      fontSize: isMobile ? '36px' : '48px',
       fontWeight: '800',
       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       WebkitBackgroundClip: 'text',
@@ -208,23 +218,27 @@ function Loyalty() {
     },
     tabs: {
       display: 'flex',
-      gap: '12px',
-      marginBottom: '32px',
+      gap: isMobile ? '8px' : '12px',
+      marginBottom: isMobile ? '20px' : '32px',
       borderBottom: darkMode ? '1px solid #1f2937' : '1px solid #e5e7eb',
       overflowX: 'auto',
-      paddingBottom: '12px'
+      paddingBottom: '12px',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none'
     },
     tab: {
-      padding: '12px 24px',
+      padding: isMobile ? '10px 14px' : '12px 24px',
       borderRadius: '10px',
       border: 'none',
       backgroundColor: 'transparent',
       color: darkMode ? '#9ca3af' : '#6b7280',
-      fontSize: '16px',
+      fontSize: isMobile ? '13px' : '16px',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
-      whiteSpace: 'nowrap'
+      whiteSpace: 'nowrap',
+      flexShrink: 0
     },
     tabActive: {
       backgroundColor: '#10b981',
@@ -232,13 +246,13 @@ function Loyalty() {
     },
     achievementsGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '20px'
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: isMobile ? '12px' : '20px'
     },
     achievementCard: {
       backgroundColor: darkMode ? '#111111' : '#ffffff',
-      borderRadius: '16px',
-      padding: '24px',
+      borderRadius: isMobile ? '12px' : '16px',
+      padding: isMobile ? '16px' : '24px',
       border: darkMode ? '1px solid #1f2937' : '1px solid #e5e7eb',
       transition: 'all 0.3s ease',
       position: 'relative',
@@ -303,30 +317,33 @@ function Loyalty() {
     },
     referralCard: {
       backgroundColor: darkMode ? '#111111' : '#ffffff',
-      borderRadius: '20px',
-      padding: '32px',
+      borderRadius: isMobile ? '16px' : '20px',
+      padding: isMobile ? '20px' : '32px',
       border: '2px solid #10b981',
       boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
     },
     referralCode: {
       display: 'flex',
-      alignItems: 'center',
+      alignItems: isMobile ? 'stretch' : 'center',
+      flexDirection: isMobile ? 'column' : 'row',
       gap: '12px',
       backgroundColor: darkMode ? '#0a0a0a' : '#f9fafb',
-      padding: '16px 24px',
+      padding: isMobile ? '16px' : '16px 24px',
       borderRadius: '12px',
       marginTop: '16px',
       marginBottom: '16px'
     },
     codeText: {
-      fontSize: '24px',
+      fontSize: isMobile ? '18px' : '24px',
       fontWeight: '700',
       color: '#10b981',
       letterSpacing: '2px',
-      flex: 1
+      flex: 1,
+      textAlign: isMobile ? 'center' : 'left',
+      wordBreak: 'break-all'
     },
     copyButton: {
-      padding: '10px 20px',
+      padding: isMobile ? '12px 16px' : '10px 20px',
       backgroundColor: '#10b981',
       color: '#ffffff',
       border: 'none',
@@ -334,9 +351,11 @@ function Loyalty() {
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: '8px',
       fontWeight: '600',
-      transition: 'all 0.2s ease'
+      transition: 'all 0.2s ease',
+      width: isMobile ? '100%' : 'auto'
     }
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Plane, Hotel, CreditCard, Home, User, LogIn, LogOut, Shield, Menu, X, Moon, Sun, Sparkles } from 'lucide-react';
+import { Plane, Hotel, CreditCard, Home, User, LogIn, LogOut, Shield, Menu, X, Moon, Sun, Sparkles, Award } from 'lucide-react';
 import { authService } from '../services/api';
 import TierBadge from './TierBadge';
 
@@ -561,6 +561,16 @@ function Navbar() {
                   >
                     <CreditCard size={20} className="nav-icon" />
                     <span>My Bookings</span>
+                  </Link>
+
+                  <Link
+                    to="/loyalty"
+                    style={linkStyle('/loyalty')}
+                    className={`epic-nav-link ${isActive('/loyalty') ? 'active' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Award size={20} className="nav-icon" />
+                    <span>Loyalty & Rewards</span>
                   </Link>
 
                   {user.role === 'admin' && (
