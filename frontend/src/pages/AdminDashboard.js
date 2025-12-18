@@ -148,12 +148,18 @@ function AdminDashboard() {
         tripService.getAll().catch(() => ({ data: { data: [] } }))
       ]);
 
+      const allUsers = usersRes.data?.data || [];
+      const adminCount = allUsers.filter(u => u.role === 'admin').length;
+      const regularUserCount = allUsers.filter(u => u.role !== 'admin').length;
+
       setStats({
         ...statsRes.data?.data,
+        totalUsers: regularUserCount,
+        totalAdmins: adminCount,
         totalHotels: hotelsRes.data?.data?.length || 0,
         totalTrips: tripsRes.data?.data?.length || 0
       });
-      setUsers(usersRes.data?.data || []);
+      setUsers(allUsers);
       setHotels(hotelsRes.data?.data || []);
       setTrips(tripsRes.data?.data || []);
     } catch (err) {
@@ -198,6 +204,12 @@ function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId) => {
+    // Prevent admin from deleting themselves
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (currentUser.id === userId) {
+      showNotification('You cannot delete your own account!', 'error');
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     try {
       await adminService.deleteUser(userId);
@@ -412,12 +424,18 @@ function AdminDashboard() {
         if (!args[0]) {
           addOutput('Usage: deleteuser <userId>', 'error');
         } else {
-          try {
-            await adminService.deleteUser(args[0]);
-            addOutput('User deleted!', 'success');
-            fetchAllData();
-          } catch (err) {
-            addOutput(`Error: ${err.response?.data?.error || err.message}`, 'error');
+          // Prevent admin from deleting themselves
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser.id === args[0]) {
+            addOutput('Error: You cannot delete your own account!', 'error');
+          } else {
+            try {
+              await adminService.deleteUser(args[0]);
+              addOutput('User deleted!', 'success');
+              fetchAllData();
+            } catch (err) {
+              addOutput(`Error: ${err.response?.data?.error || err.message}`, 'error');
+            }
           }
         }
         break;
@@ -558,14 +576,15 @@ function AdminDashboard() {
               {activeTab === item.id && <ChevronRight size={16} style={{ marginLeft: 'auto' }} />}
             </button>
           ))}
+
+          {/* CLI Button in nav section */}
+          <button onClick={() => setCliOpen(true)} style={styles.cliButtonNav}>
+            <Terminal size={20} />
+            <span>Open CLI</span>
+          </button>
         </nav>
 
         <div style={styles.sidebarFooter}>
-          <button onClick={() => setCliOpen(true)} style={styles.cliButton}>
-            <Terminal size={18} />
-            <span>Open CLI</span>
-          </button>
-
           <button onClick={handleLogout} style={styles.logoutButton}>
             <LogOut size={18} />
             <span>Logout</span>
@@ -1519,6 +1538,22 @@ function getStyles(darkMode) {
     navButtonActive: {
       background: 'rgba(16, 185, 129, 0.2)',
       color: '#10b981',
+    },
+    cliButtonNav: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.875rem 1rem',
+      marginTop: '1rem',
+      background: 'rgba(16, 185, 129, 0.15)',
+      border: '1px solid rgba(16, 185, 129, 0.3)',
+      borderRadius: '10px',
+      color: '#10b981',
+      fontSize: '0.95rem',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      textAlign: 'left',
     },
     sidebarFooter: {
       padding: '1rem',
