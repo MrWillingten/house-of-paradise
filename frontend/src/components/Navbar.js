@@ -12,6 +12,7 @@ function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -25,6 +26,25 @@ function Navbar() {
       // Force light mode for non-authenticated users
       setDarkMode(false);
     }
+  }, [location]);
+
+  // Handle resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close mobile menu when navigating
+  useEffect(() => {
+    setMobileMenuOpen(false);
   }, [location]);
 
   // Listen for profileImage changes in localStorage
@@ -63,11 +83,24 @@ function Navbar() {
     }
   }, [darkMode, user]);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
     authService.logout();
     setUser(null);
+    setMobileMenuOpen(false);
 
     // Force light mode on logout
     setDarkMode(false);
@@ -101,7 +134,12 @@ function Navbar() {
   };
 
   const navStyle = {
-    ...styles.nav,
+    padding: isMobile ? '0.75rem 0' : '1rem 0',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1000,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
     background: (user && darkMode)
       ? scrolled
         ? 'rgba(10, 10, 10, 0.95)'
@@ -117,7 +155,74 @@ function Navbar() {
       : (user && darkMode)
       ? '0 4px 16px rgba(0, 0, 0, 0.2)'
       : '0 4px 16px rgba(0, 0, 0, 0.04)',
-    transform: scrolled ? 'translateY(0)' : 'translateY(0)',
+  };
+
+  const containerStyle = {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: isMobile ? '0 1rem' : '0 2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    position: 'relative',
+  };
+
+  const mobileMenuBtnStyle = {
+    display: isMobile ? 'flex' : 'none',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    color: (user && darkMode) ? '#fff' : '#1f2937',
+    zIndex: 1001,
+  };
+
+  const linksContainerStyle = {
+    display: isMobile ? (mobileMenuOpen ? 'flex' : 'none') : 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'center',
+    gap: isMobile ? '0.5rem' : '0.5rem',
+    position: isMobile ? 'fixed' : 'static',
+    top: isMobile ? '0' : 'auto',
+    left: isMobile ? '0' : 'auto',
+    right: isMobile ? '0' : 'auto',
+    bottom: isMobile ? '0' : 'auto',
+    background: isMobile
+      ? (user && darkMode)
+        ? 'rgba(10, 10, 10, 0.98)'
+        : 'rgba(255, 255, 255, 0.98)'
+      : 'transparent',
+    padding: isMobile ? '80px 1.5rem 2rem' : '0',
+    backdropFilter: isMobile ? 'blur(20px)' : 'none',
+    overflowY: isMobile ? 'auto' : 'visible',
+    zIndex: isMobile ? 999 : 'auto',
+  };
+
+  const linkStyle = (path) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: isMobile ? '1rem 1.25rem' : '0.75rem 1.25rem',
+    textDecoration: 'none',
+    fontWeight: '600',
+    fontSize: isMobile ? '1.1rem' : '0.95rem',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
+    background: isActive(path) ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+    transition: 'all 0.2s ease',
+  });
+
+  const actionButtonsStyle = {
+    display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'center',
+    gap: isMobile ? '0.75rem' : '0.5rem',
+    marginTop: isMobile ? '1rem' : '0',
+    paddingTop: isMobile ? '1rem' : '0',
+    borderTop: isMobile ? `1px solid ${(user && darkMode) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` : 'none',
   };
 
   return (
@@ -126,24 +231,27 @@ function Navbar() {
       <style>{navbarAnimations}</style>
 
       <nav style={navStyle} className="epic-navbar">
-        <div style={styles.container}>
+        <div style={containerStyle}>
           {/* Epic Logo */}
           <Link to="/" style={styles.logo} className="epic-logo">
             <div
               style={{
                 ...styles.logoIcon,
+                width: isMobile ? '40px' : '48px',
+                height: isMobile ? '40px' : '48px',
                 background: (user && darkMode)
                   ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                   : 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
               }}
               className="logo-icon-wrapper"
             >
-              <Plane size={24} strokeWidth={2.5} className="logo-plane-icon" />
+              <Plane size={isMobile ? 20 : 24} strokeWidth={2.5} className="logo-plane-icon" />
             </div>
             <div style={styles.logoText}>
               <span
                 style={{
                   ...styles.logoMain,
+                  fontSize: isMobile ? '1.25rem' : '1.5rem',
                   color: '#10b981',
                 }}
                 className="logo-main-text"
@@ -153,6 +261,7 @@ function Navbar() {
               <span
                 style={{
                   ...styles.logoSub,
+                  fontSize: isMobile ? '0.6rem' : '0.7rem',
                   color: (user && darkMode) ? '#9ca3af' : '#6b7280',
                 }}
                 className="logo-sub-text"
@@ -164,182 +273,222 @@ function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            style={{
-              ...styles.mobileMenuBtn,
-              color: (user && darkMode) ? '#fff' : '#1f2937',
-            }}
+            style={mobileMenuBtnStyle}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="mobile-menu-btn"
+            aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
 
           {/* Navigation Links */}
-          <div
-            style={{
-              ...styles.links,
-              ...(mobileMenuOpen ? styles.linksMobileOpen : {}),
-              background: mobileMenuOpen
-                ? (user && darkMode)
-                  ? 'rgba(10, 10, 10, 0.98)'
-                  : 'rgba(255, 255, 255, 0.98)'
-                : 'transparent',
-            }}
-            className="nav-links-container"
-          >
+          <div style={linksContainerStyle} className="nav-links-container">
+            {/* Close button for mobile overlay */}
+            {isMobile && mobileMenuOpen && (
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  color: (user && darkMode) ? '#fff' : '#1f2937',
+                  zIndex: 1002,
+                }}
+              >
+                <X size={28} />
+              </button>
+            )}
+
             <Link
               to="/"
-              style={{
-                ...styles.link,
-                ...(isActive('/') ? styles.linkActive : {}),
-                color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
-              }}
+              style={linkStyle('/')}
               className={`epic-nav-link ${isActive('/') ? 'active' : ''}`}
-              onMouseEnter={() => setHoveredLink('home')}
-              onMouseLeave={() => setHoveredLink(null)}
+              onClick={() => setMobileMenuOpen(false)}
             >
-              <Home size={18} className="nav-icon" />
+              <Home size={20} className="nav-icon" />
               <span>Home</span>
-              {isActive('/') && <div className="active-indicator"></div>}
             </Link>
 
             <Link
               to="/hotels"
-              style={{
-                ...styles.link,
-                ...(isActive('/hotels') ? styles.linkActive : {}),
-                color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
-              }}
+              style={linkStyle('/hotels')}
               className={`epic-nav-link ${isActive('/hotels') ? 'active' : ''}`}
-              onMouseEnter={() => setHoveredLink('hotels')}
-              onMouseLeave={() => setHoveredLink(null)}
+              onClick={() => setMobileMenuOpen(false)}
             >
-              <Hotel size={18} className="nav-icon" />
+              <Hotel size={20} className="nav-icon" />
               <span>Hotels</span>
-              {isActive('/hotels') && <div className="active-indicator"></div>}
             </Link>
 
             <Link
               to="/trips"
-              style={{
-                ...styles.link,
-                ...(isActive('/trips') ? styles.linkActive : {}),
-                color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
-              }}
+              style={linkStyle('/trips')}
               className={`epic-nav-link ${isActive('/trips') ? 'active' : ''}`}
-              onMouseEnter={() => setHoveredLink('trips')}
-              onMouseLeave={() => setHoveredLink(null)}
+              onClick={() => setMobileMenuOpen(false)}
             >
-              <Plane size={18} className="nav-icon" />
+              <Plane size={20} className="nav-icon" />
               <span>Trips</span>
-              {isActive('/trips') && <div className="active-indicator"></div>}
             </Link>
 
             {user && (
               <>
                 <Link
                   to="/bookings"
-                  style={{
-                    ...styles.link,
-                    ...(isActive('/bookings') ? styles.linkActive : {}),
-                    color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
-                  }}
+                  style={linkStyle('/bookings')}
                   className={`epic-nav-link ${isActive('/bookings') ? 'active' : ''}`}
-                  onMouseEnter={() => setHoveredLink('bookings')}
-                  onMouseLeave={() => setHoveredLink(null)}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  <CreditCard size={18} className="nav-icon" />
+                  <CreditCard size={20} className="nav-icon" />
                   <span>My Bookings</span>
-                  {isActive('/bookings') && <div className="active-indicator"></div>}
                 </Link>
 
                 {user.role === 'admin' && (
                   <Link
                     to="/admin"
-                    style={{
-                      ...styles.link,
-                      ...(isActive('/admin') ? styles.linkActive : {}),
-                      color: (user && darkMode) ? '#e5e7eb' : '#1f2937',
-                    }}
+                    style={linkStyle('/admin')}
                     className={`epic-nav-link ${isActive('/admin') ? 'active' : ''}`}
-                    onMouseEnter={() => setHoveredLink('admin')}
-                    onMouseLeave={() => setHoveredLink(null)}
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Shield size={18} className="nav-icon" />
+                    <Shield size={20} className="nav-icon" />
                     <span>Admin</span>
-                    {isActive('/admin') && <div className="active-indicator"></div>}
                   </Link>
                 )}
               </>
             )}
 
-            {user ? (
-              <>
+            {/* Action buttons section */}
+            <div style={actionButtonsStyle}>
+              {user ? (
+                <>
+                  <Link
+                    to="/account"
+                    style={{
+                      ...linkStyle('/account'),
+                      justifyContent: isMobile ? 'flex-start' : 'center',
+                    }}
+                    className={`epic-nav-link ${isActive('/account') ? 'active' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {user.profileImage ? (
+                      <img
+                        src={user.profileImage}
+                        alt={user.name}
+                        style={{
+                          ...styles.profileImage,
+                          width: isMobile ? '36px' : '32px',
+                          height: isMobile ? '36px' : '32px',
+                        }}
+                        className="profile-image"
+                      />
+                    ) : (
+                      <User size={20} className="nav-icon" />
+                    )}
+                    <span>{user.name}</span>
+                  </Link>
+
+                  {!isMobile && <TierBadge userId={user.id} />}
+
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'row' : 'row',
+                    gap: '0.5rem',
+                    marginTop: isMobile ? '0.5rem' : '0',
+                  }}>
+                    <button
+                      onClick={toggleDarkMode}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: isMobile ? '0.875rem' : '0.75rem',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        color: '#10b981',
+                        flex: isMobile ? 1 : 'none',
+                      }}
+                      className="epic-dark-mode-btn"
+                      title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                      {darkMode ? <Sun size={20} className="theme-icon" /> : <Moon size={20} className="theme-icon" />}
+                      {isMobile && <span style={{ marginLeft: '0.5rem' }}>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
+                    </button>
+
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: isMobile ? '0.875rem 1.25rem' : '0.75rem 1.25rem',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: 'white',
+                        fontWeight: '700',
+                        fontSize: isMobile ? '1rem' : '0.95rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        flex: isMobile ? 1 : 'none',
+                      }}
+                      className="epic-logout-btn"
+                    >
+                      <LogOut size={20} className="nav-icon" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
                 <Link
-                  to="/account"
+                  to="/login"
                   style={{
-                    ...styles.link,
-                    ...(isActive('/account') ? styles.linkActive : {}),
-                    color: darkMode ? '#e5e7eb' : '#1f2937',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: isMobile ? '1rem 1.5rem' : '0.75rem 1.5rem',
+                    textDecoration: 'none',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    fontWeight: '700',
+                    fontSize: isMobile ? '1.1rem' : '0.95rem',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    cursor: 'pointer',
                   }}
-                  className={`epic-nav-link ${isActive('/account') ? 'active' : ''}`}
-                  onMouseEnter={() => setHoveredLink('account')}
-                  onMouseLeave={() => setHoveredLink(null)}
+                  className="epic-login-btn"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  {user.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt={user.name}
-                      style={styles.profileImage}
-                      className="profile-image"
-                    />
-                  ) : (
-                    <User size={18} className="nav-icon" />
-                  )}
-                  <span>{user.name}</span>
-                  {isActive('/account') && <div className="active-indicator"></div>}
+                  <LogIn size={20} />
+                  <span>Login</span>
                 </Link>
-
-                <TierBadge userId={user.id} />
-
-                <button
-                  onClick={toggleDarkMode}
-                  style={{
-                    ...styles.darkModeBtn,
-                    background: 'rgba(16, 185, 129, 0.1)',
-                    color: '#10b981',
-                  }}
-                  className="epic-dark-mode-btn"
-                  title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                >
-                  {darkMode ? <Sun size={18} className="theme-icon" /> : <Moon size={18} className="theme-icon" />}
-                </button>
-
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    ...styles.logoutButton,
-                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  }}
-                  className="epic-logout-btn"
-                >
-                  <LogOut size={18} className="nav-icon" />
-                  <span>Logout</span>
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/login"
-                style={styles.loginButton}
-                className="epic-login-btn"
-              >
-                <LogIn size={18} />
-                <span>Login</span>
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </nav>
+
+      {/* Mobile menu backdrop */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 998,
+          }}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -400,33 +549,12 @@ const navbarAnimations = `
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .epic-nav-link::before {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    width: 0%;
-    height: 2px;
-    background: linear-gradient(90deg, #10b981 0%, #06b6d4 100%);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(-50%);
-  }
-
-  .epic-nav-link:hover::before {
-    width: 80%;
-  }
-
-  .epic-nav-link.active::before {
-    width: 100%;
-    height: 3px;
-  }
-
   .epic-nav-link:hover {
-    transform: translateY(-2px);
+    background: rgba(16, 185, 129, 0.1) !important;
   }
 
-  .epic-nav-link.active {
-    font-weight: 700;
+  .epic-nav-link:active {
+    transform: scale(0.98);
   }
 
   .nav-icon {
@@ -434,37 +562,12 @@ const navbarAnimations = `
   }
 
   .epic-nav-link:hover .nav-icon {
-    transform: scale(1.2) rotate(5deg);
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+    transform: scale(1.1);
+    color: #10b981;
   }
 
   .epic-nav-link.active .nav-icon {
     color: #10b981;
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
-  }
-
-  .active-indicator {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      transform: translateX(-50%) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translateX(-50%) scale(1.3);
-      opacity: 0.7;
-    }
   }
 
   /* Dark Mode Button */
@@ -473,8 +576,12 @@ const navbarAnimations = `
   }
 
   .epic-dark-mode-btn:hover {
-    transform: translateY(-2px) scale(1.05);
+    transform: scale(1.05);
     box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+  }
+
+  .epic-dark-mode-btn:active {
+    transform: scale(0.95);
   }
 
   .theme-icon {
@@ -482,7 +589,7 @@ const navbarAnimations = `
   }
 
   .epic-dark-mode-btn:hover .theme-icon {
-    transform: rotate(180deg) scale(1.2);
+    transform: rotate(180deg);
   }
 
   /* Logout/Login Button */
@@ -491,8 +598,11 @@ const navbarAnimations = `
   }
 
   .epic-logout-btn:hover, .epic-login-btn:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  .epic-logout-btn:active, .epic-login-btn:active {
+    transform: scale(0.98);
   }
 
   .epic-login-btn:hover {
@@ -504,24 +614,8 @@ const navbarAnimations = `
     transition: all 0.3s ease;
   }
 
-  .mobile-menu-btn:hover {
-    transform: rotate(90deg) scale(1.1);
-  }
-
-  /* Mobile Menu Animation */
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .nav-links-container {
-    animation: slideDown 0.3s ease;
+  .mobile-menu-btn:active {
+    transform: scale(0.9);
   }
 
   /* Navbar Entrance */
@@ -550,75 +644,35 @@ const navbarAnimations = `
     box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
   }
 
-  .epic-nav-link.active .profile-image {
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6);
-  }
-
-  /* Responsive */
+  /* Mobile specific styles */
   @media (max-width: 768px) {
-    .mobile-menu-btn {
-      display: block !important;
-    }
-
     .nav-links-container {
-      display: none;
-      flex-direction: column;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      padding: 2rem;
-      gap: 1rem;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.3s ease-out;
     }
 
-    .nav-links-container[style*="background"] {
-      display: flex !important;
-    }
-
-    .epic-nav-link::before {
-      bottom: 0;
-      left: 0;
-      transform: none;
-      height: 100%;
-      border-radius: 8px;
-      opacity: 0.1;
-    }
-
-    .epic-nav-link:hover::before {
-      width: 100%;
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
   }
 `;
 
 const styles = {
-  nav: {
-    padding: '1rem 0',
-    position: 'sticky',
-    top: 0,
-    zIndex: 1000,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
-  },
-  container: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '0 2rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   logo: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
     textDecoration: 'none',
     cursor: 'pointer',
+    zIndex: 1001,
   },
   logoIcon: {
-    width: '48px',
-    height: '48px',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
@@ -631,83 +685,15 @@ const styles = {
     flexDirection: 'column',
   },
   logoMain: {
-    fontSize: '1.5rem',
     fontWeight: '800',
     lineHeight: 1,
   },
   logoSub: {
-    fontSize: '0.7rem',
     fontWeight: '600',
     letterSpacing: '0.5px',
     marginTop: '2px',
   },
-  mobileMenuBtn: {
-    display: 'none',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '0.5rem',
-  },
-  links: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  },
-  linksMobileOpen: {},
-  link: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.75rem 1.25rem',
-    textDecoration: 'none',
-    fontWeight: '600',
-    fontSize: '0.95rem',
-    borderRadius: '12px',
-    cursor: 'pointer',
-  },
-  linkActive: {
-    background: 'rgba(16, 185, 129, 0.1)',
-  },
-  darkModeBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.75rem',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-  logoutButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.75rem 1.25rem',
-    border: 'none',
-    borderRadius: '12px',
-    color: 'white',
-    fontWeight: '700',
-    fontSize: '0.95rem',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-  },
-  loginButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '0.75rem 1.5rem',
-    textDecoration: 'none',
-    borderRadius: '12px',
-    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    color: 'white',
-    fontWeight: '700',
-    fontSize: '0.95rem',
-    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-    cursor: 'pointer',
-  },
   profileImage: {
-    width: '32px',
-    height: '32px',
     borderRadius: '50%',
     border: '2px solid #10b981',
     boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',

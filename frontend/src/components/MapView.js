@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Maximize2, Minimize2, Layers, Navigation, Zap } from 'lucide-react';
+import { MapPin, Maximize2, Minimize2, Layers, Navigation, Zap, Hand, MousePointer } from 'lucide-react';
 
 const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => {
   const mapRef = useRef(null);
@@ -8,7 +8,21 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapStyle, setMapStyle] = useState('standard');
   const [userLocation, setUserLocation] = useState(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayMessage, setOverlayMessage] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const overlayTimeoutRef = useRef(null);
   const boundsUpdateTimerRef = useRef(null);
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Load Leaflet dynamically
   useEffect(() => {
@@ -39,6 +53,19 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
     }
   }, [hotels, selectedHotel]);
 
+  const showOverlayMessage = (message) => {
+    setOverlayMessage(message);
+    setShowOverlay(true);
+
+    if (overlayTimeoutRef.current) {
+      clearTimeout(overlayTimeoutRef.current);
+    }
+
+    overlayTimeoutRef.current = setTimeout(() => {
+      setShowOverlay(false);
+    }, 2000);
+  };
+
   const initializeMap = () => {
     if (!window.L || !mapRef.current) return;
 
@@ -54,11 +81,14 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
       : [40.7128, -74.0060]; // Default to NYC
 
     try {
-      // Initialize map
+      // Initialize map with scroll wheel zoom disabled by default
       const map = window.L.map(mapRef.current, {
         center: defaultCenter,
         zoom: 12,
         zoomControl: false,
+        scrollWheelZoom: false, // Disabled - require Ctrl on desktop
+        dragging: !isMobile, // Enable dragging on desktop, disable on mobile initially
+        touchZoom: false, // Disabled - require two fingers on mobile
       });
 
       // Add tile layer (OpenStreetMap - free!)
@@ -73,6 +103,66 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
       window.L.control.zoom({
         position: 'bottomright'
       }).addTo(map);
+
+      // Handle desktop scroll wheel (require Ctrl)
+      const mapContainer = mapRef.current;
+
+      mapContainer.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+          // Allow zoom with Ctrl
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? -1 : 1;
+          map.setZoom(map.getZoom() + delta * 0.5);
+        } else {
+          // Show overlay message
+          showOverlayMessage('Use Ctrl + scroll to zoom the map');
+        }
+      }, { passive: false });
+
+      // Handle mobile touch events
+      let touchCount = 0;
+      let lastTouchTime = 0;
+
+      mapContainer.addEventListener('touchstart', (e) => {
+        touchCount = e.touches.length;
+        lastTouchTime = Date.now();
+
+        if (touchCount === 2) {
+          // Two fingers - enable zoom and pan
+          map.touchZoom.enable();
+          map.dragging.enable();
+        } else if (touchCount === 1) {
+          // One finger - show message after a short delay if still one finger
+          setTimeout(() => {
+            if (touchCount === 1 && Date.now() - lastTouchTime < 300) {
+              showOverlayMessage('Use two fingers to move the map');
+            }
+          }, 150);
+        }
+      }, { passive: true });
+
+      mapContainer.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && !isFullscreen) {
+          // Single finger - prevent map interaction, allow page scroll
+          map.dragging.disable();
+          map.touchZoom.disable();
+        } else if (e.touches.length >= 2) {
+          // Two or more fingers - allow map interaction
+          map.touchZoom.enable();
+          map.dragging.enable();
+        }
+      }, { passive: true });
+
+      mapContainer.addEventListener('touchend', (e) => {
+        touchCount = e.touches.length;
+        if (touchCount === 0) {
+          // Reset - disable map interaction
+          if (!isFullscreen) {
+            map.dragging.disable();
+            map.touchZoom.disable();
+          }
+        }
+      }, { passive: true });
 
       // Add markers
       updateMarkers();
@@ -99,42 +189,9 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
 
           window.L.marker(userPos, { icon: userIcon })
             .addTo(map)
-            .bindPopup('<b>📍 You are here!</b>');
+            .bindPopup('<b>You are here!</b>');
         });
       }
-
-      // Real-time bounds change listener - DISABLED to prevent rate limiting
-      // The map will show all hotels initially, user can manually search to filter
-      // if (onMapBoundsChange) {
-      //   map.on('moveend', () => {
-      //     // Debounce the refresh to avoid too many API calls
-      //     if (boundsUpdateTimerRef.current) {
-      //       clearTimeout(boundsUpdateTimerRef.current);
-      //     }
-      //
-      //     boundsUpdateTimerRef.current = setTimeout(() => {
-      //       const bounds = map.getBounds();
-      //       const center = map.getCenter();
-      //
-      //       // Call the callback with new bounds data
-      //       onMapBoundsChange({
-      //         center: {
-      //           lat: center.lat,
-      //           lng: center.lng
-      //         },
-      //         bounds: {
-      //           north: bounds.getNorth(),
-      //           south: bounds.getSouth(),
-      //           east: bounds.getEast(),
-      //           west: bounds.getWest()
-      //         },
-      //         zoom: map.getZoom()
-      //       });
-      //
-      //       console.log('🗺️  Map moved - refreshing hotels in view...');
-      //     }, 1000); // Wait 1 second after user stops moving map
-      //   });
-      // }
 
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -257,7 +314,7 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
                 justify-content: center;
                 font-size: 13px;
                 box-shadow: 0 2px 6px rgba(245, 158, 11, 0.5);
-              ">⚡</div>
+              "></div>
             ` : ''}
           </div>
         `,
@@ -291,7 +348,7 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
                   border-radius: 6px;
                   font-size: 12px;
                   font-weight: 600;
-                ">⭐ ${hotel.rating.toFixed(1)}</span>
+                "> ${hotel.rating.toFixed(1)}</span>
               ` : ''}
             </div>
             <div style="text-align: right;">
@@ -355,7 +412,19 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
   }, []);
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const newFullscreen = !isFullscreen;
+    setIsFullscreen(newFullscreen);
+
+    // When entering fullscreen, enable dragging
+    if (mapInstanceRef.current) {
+      if (newFullscreen) {
+        mapInstanceRef.current.dragging.enable();
+        mapInstanceRef.current.touchZoom.enable();
+      } else if (isMobile) {
+        mapInstanceRef.current.dragging.disable();
+        mapInstanceRef.current.touchZoom.disable();
+      }
+    }
   };
 
   const changeMapStyle = (style) => {
@@ -406,69 +475,107 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
   return (
     <div style={{
       ...styles.container,
-      ...(isFullscreen && styles.fullscreen)
+      ...(isFullscreen && styles.fullscreen),
+      height: isMobile ? '350px' : '500px',
     }}>
+      {/* Gesture Overlay */}
+      <div style={{
+        ...styles.overlay,
+        opacity: showOverlay ? 1 : 0,
+        pointerEvents: showOverlay ? 'none' : 'none',
+      }}>
+        <div style={styles.overlayContent}>
+          {isMobile ? (
+            <>
+              <Hand size={32} style={{ marginBottom: '0.5rem' }} />
+              <span>{overlayMessage}</span>
+            </>
+          ) : (
+            <>
+              <MousePointer size={32} style={{ marginBottom: '0.5rem' }} />
+              <span>{overlayMessage}</span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Map Controls */}
-      <div style={styles.controls}>
+      <div style={{
+        ...styles.controls,
+        flexDirection: isMobile ? 'row' : 'column',
+        top: isMobile ? '0.5rem' : '1rem',
+        right: isMobile ? '0.5rem' : '1rem',
+      }}>
         {/* Fullscreen Toggle */}
         <button
           onClick={toggleFullscreen}
-          style={styles.controlButton}
+          style={{
+            ...styles.controlButton,
+            width: isMobile ? '40px' : '44px',
+            height: isMobile ? '40px' : '44px',
+          }}
           className="map-control-btn"
           title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
         >
-          {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          {isFullscreen ? <Minimize2 size={isMobile ? 18 : 20} /> : <Maximize2 size={isMobile ? 18 : 20} />}
         </button>
 
-        {/* Map Style Selector */}
-        <div style={styles.styleSelector}>
-          <button
-            onClick={() => changeMapStyle('standard')}
-            style={mapStyle === 'standard' ? styles.styleButtonActive : styles.styleButton}
-            className="map-style-btn"
-          >
-            Standard
-          </button>
-          <button
-            onClick={() => changeMapStyle('satellite')}
-            style={mapStyle === 'satellite' ? styles.styleButtonActive : styles.styleButton}
-            className="map-style-btn"
-          >
-            Satellite
-          </button>
-          <button
-            onClick={() => changeMapStyle('dark')}
-            style={mapStyle === 'dark' ? styles.styleButtonActive : styles.styleButton}
-            className="map-style-btn"
-          >
-            Dark
-          </button>
-          <button
-            onClick={() => changeMapStyle('light')}
-            style={mapStyle === 'light' ? styles.styleButtonActive : styles.styleButton}
-            className="map-style-btn"
-          >
-            Light
-          </button>
-        </div>
+        {/* Map Style Selector - Hidden on mobile unless fullscreen */}
+        {(!isMobile || isFullscreen) && (
+          <div style={styles.styleSelector}>
+            <button
+              onClick={() => changeMapStyle('standard')}
+              style={mapStyle === 'standard' ? styles.styleButtonActive : styles.styleButton}
+              className="map-style-btn"
+            >
+              Standard
+            </button>
+            <button
+              onClick={() => changeMapStyle('satellite')}
+              style={mapStyle === 'satellite' ? styles.styleButtonActive : styles.styleButton}
+              className="map-style-btn"
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => changeMapStyle('dark')}
+              style={mapStyle === 'dark' ? styles.styleButtonActive : styles.styleButton}
+              className="map-style-btn"
+            >
+              Dark
+            </button>
+          </div>
+        )}
 
         {/* Center on User */}
         {userLocation && (
           <button
             onClick={centerOnUser}
-            style={styles.controlButton}
+            style={{
+              ...styles.controlButton,
+              width: isMobile ? '40px' : '44px',
+              height: isMobile ? '40px' : '44px',
+            }}
             className="map-control-btn"
             title="My Location"
           >
-            <Navigation size={20} />
+            <Navigation size={isMobile ? 18 : 20} />
           </button>
         )}
       </div>
 
       {/* Hotel Count Badge */}
-      <div style={styles.hotelCount}>
-        <MapPin size={16} color="#10b981" />
-        <span style={styles.countText}>{hotels.length} hotels</span>
+      <div style={{
+        ...styles.hotelCount,
+        padding: isMobile ? '0.5rem 0.75rem' : '0.75rem 1rem',
+        top: isMobile ? '0.5rem' : '1rem',
+        left: isMobile ? '0.5rem' : '1rem',
+      }}>
+        <MapPin size={isMobile ? 14 : 16} color="#10b981" />
+        <span style={{
+          ...styles.countText,
+          fontSize: isMobile ? '0.8rem' : '0.9rem',
+        }}>{hotels.length} hotels</span>
       </div>
 
       {/* Map Container */}
@@ -477,22 +584,36 @@ const MapView = ({ hotels, onHotelClick, selectedHotel, onMapBoundsChange }) => 
         style={styles.map}
       />
 
-      {/* Legend */}
-      <div style={styles.legend}>
-        <div style={styles.legendTitle}>Availability</div>
-        <div style={styles.legendItem}>
-          <div style={{...styles.legendDot, background: '#10b981'}}></div>
-          <span>Available</span>
+      {/* Legend - Hidden on mobile unless fullscreen */}
+      {(!isMobile || isFullscreen) && (
+        <div style={{
+          ...styles.legend,
+          bottom: isMobile ? '0.5rem' : '1rem',
+          left: isMobile ? '0.5rem' : '1rem',
+        }}>
+          <div style={styles.legendTitle}>Availability</div>
+          <div style={styles.legendItem}>
+            <div style={{...styles.legendDot, background: '#10b981'}}></div>
+            <span>Available</span>
+          </div>
+          <div style={styles.legendItem}>
+            <div style={{...styles.legendDot, background: '#f59e0b'}}></div>
+            <span>Limited</span>
+          </div>
+          <div style={styles.legendItem}>
+            <div style={{...styles.legendDot, background: '#ef4444'}}></div>
+            <span>Almost Full</span>
+          </div>
         </div>
-        <div style={styles.legendItem}>
-          <div style={{...styles.legendDot, background: '#f59e0b'}}></div>
-          <span>Limited</span>
+      )}
+
+      {/* Mobile hint */}
+      {isMobile && !isFullscreen && (
+        <div style={styles.mobileHint}>
+          <Hand size={14} />
+          <span>Use two fingers to navigate</span>
         </div>
-        <div style={styles.legendItem}>
-          <div style={{...styles.legendDot, background: '#ef4444'}}></div>
-          <span>Almost Full</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -501,7 +622,6 @@ const styles = {
   container: {
     position: 'relative',
     width: '100%',
-    height: '500px',
     borderRadius: '16px',
     overflow: 'hidden',
     boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
@@ -515,24 +635,45 @@ const styles = {
     bottom: 0,
     zIndex: 9999,
     borderRadius: 0,
-    height: '100vh',
+    height: '100vh !important',
   },
   map: {
     width: '100%',
     height: '100%',
   },
-  controls: {
+  overlay: {
     position: 'absolute',
-    top: '1rem',
-    right: '1rem',
-    zIndex: 1000,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.6)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+    transition: 'opacity 0.3s ease',
+  },
+  overlayContent: {
+    background: 'rgba(0, 0, 0, 0.85)',
+    color: 'white',
+    padding: '1rem 1.5rem',
+    borderRadius: '12px',
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    fontSize: '0.95rem',
+    fontWeight: '600',
+  },
+  controls: {
+    position: 'absolute',
+    zIndex: 1000,
+    display: 'flex',
     gap: '0.5rem',
   },
   controlButton: {
-    width: '44px',
-    height: '44px',
     background: 'white',
     border: 'none',
     borderRadius: '12px',
@@ -579,11 +720,8 @@ const styles = {
   },
   hotelCount: {
     position: 'absolute',
-    top: '1rem',
-    left: '1rem',
     zIndex: 1000,
     background: 'white',
-    padding: '0.75rem 1rem',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
@@ -591,14 +729,11 @@ const styles = {
     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
   },
   countText: {
-    fontSize: '0.9rem',
     fontWeight: '700',
     color: '#1f2937',
   },
   legend: {
     position: 'absolute',
-    bottom: '1rem',
-    left: '1rem',
     zIndex: 1000,
     background: 'white',
     padding: '0.75rem',
@@ -628,6 +763,21 @@ const styles = {
     border: '2px solid white',
     boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
   },
+  mobileHint: {
+    position: 'absolute',
+    bottom: '0.5rem',
+    right: '0.5rem',
+    zIndex: 1000,
+    background: 'rgba(0, 0, 0, 0.7)',
+    color: 'white',
+    padding: '0.375rem 0.75rem',
+    borderRadius: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    fontSize: '0.7rem',
+    fontWeight: '500',
+  },
 };
 
 // Add global styles
@@ -638,6 +788,10 @@ if (typeof document !== 'undefined') {
       background: #f0fdf4;
       color: #10b981;
       transform: scale(1.1);
+    }
+
+    .map-control-btn:active {
+      transform: scale(0.95);
     }
 
     .map-style-btn:hover {
@@ -684,6 +838,13 @@ if (typeof document !== 'undefined') {
       50% {
         transform: scale(1.2);
         opacity: 0.8;
+      }
+    }
+
+    /* Mobile adjustments for map */
+    @media (max-width: 768px) {
+      .leaflet-control-zoom {
+        margin-bottom: 60px !important;
       }
     }
   `;
