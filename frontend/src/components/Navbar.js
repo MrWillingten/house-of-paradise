@@ -227,6 +227,61 @@ function Navbar() {
     borderTop: isMobile ? `1px solid ${(user && darkMode) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` : 'none',
   };
 
+  // Mobile drawer styles
+  const mobileDrawerBackdrop = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 9998,
+    opacity: mobileMenuOpen ? 1 : 0,
+    visibility: mobileMenuOpen ? 'visible' : 'hidden',
+    transition: 'opacity 0.3s ease, visibility 0.3s ease',
+  };
+
+  const mobileDrawer = {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '280px',
+    maxWidth: '85vw',
+    background: (user && darkMode) ? '#0a0a0a' : '#ffffff',
+    zIndex: 9999,
+    transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
+    transition: 'transform 0.3s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.2)',
+  };
+
+  const mobileDrawerHeader = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '1rem 1.25rem',
+    borderBottom: `1px solid ${(user && darkMode) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+  };
+
+  const mobileDrawerContent = {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  };
+
+  const mobileDrawerFooter = {
+    padding: '1rem',
+    borderTop: `1px solid ${(user && darkMode) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+  };
+
   return (
     <>
       {/* Add CSS animations */}
@@ -274,151 +329,113 @@ function Navbar() {
           </Link>
 
           {/* Mobile Menu Button */}
-          <button
-            style={mobileMenuBtnStyle}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="mobile-menu-btn"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+          {isMobile && (
+            <button
+              style={mobileMenuBtnStyle}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="mobile-menu-btn"
+              aria-label="Toggle menu"
+            >
+              <Menu size={28} />
+            </button>
+          )}
 
-          {/* Navigation Links */}
-          <div style={linksContainerStyle} className="nav-links-container">
-            {/* Close button for mobile overlay */}
-            {isMobile && mobileMenuOpen && (
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  position: 'absolute',
-                  top: '1rem',
-                  right: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0.5rem',
-                  color: (user && darkMode) ? '#fff' : '#1f2937',
-                  zIndex: 1150,
-                }}
+          {/* Desktop Navigation Links */}
+          {!isMobile && (
+            <div style={linksContainerStyle} className="nav-links-container">
+              <Link
+                to="/"
+                style={linkStyle('/')}
+                className={`epic-nav-link ${isActive('/') ? 'active' : ''}`}
               >
-                <X size={28} />
-              </button>
-            )}
+                <Home size={20} className="nav-icon" />
+                <span>Home</span>
+              </Link>
 
-            <Link
-              to="/"
-              style={linkStyle('/')}
-              className={`epic-nav-link ${isActive('/') ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Home size={20} className="nav-icon" />
-              <span>Home</span>
-            </Link>
+              <Link
+                to="/hotels"
+                style={linkStyle('/hotels')}
+                className={`epic-nav-link ${isActive('/hotels') ? 'active' : ''}`}
+              >
+                <Hotel size={20} className="nav-icon" />
+                <span>Hotels</span>
+              </Link>
 
-            <Link
-              to="/hotels"
-              style={linkStyle('/hotels')}
-              className={`epic-nav-link ${isActive('/hotels') ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Hotel size={20} className="nav-icon" />
-              <span>Hotels</span>
-            </Link>
+              <Link
+                to="/trips"
+                style={linkStyle('/trips')}
+                className={`epic-nav-link ${isActive('/trips') ? 'active' : ''}`}
+              >
+                <Plane size={20} className="nav-icon" />
+                <span>Trips</span>
+              </Link>
 
-            <Link
-              to="/trips"
-              style={linkStyle('/trips')}
-              className={`epic-nav-link ${isActive('/trips') ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Plane size={20} className="nav-icon" />
-              <span>Trips</span>
-            </Link>
-
-            {user && (
-              <>
-                <Link
-                  to="/bookings"
-                  style={linkStyle('/bookings')}
-                  className={`epic-nav-link ${isActive('/bookings') ? 'active' : ''}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <CreditCard size={20} className="nav-icon" />
-                  <span>My Bookings</span>
-                </Link>
-
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    style={linkStyle('/admin')}
-                    className={`epic-nav-link ${isActive('/admin') ? 'active' : ''}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Shield size={20} className="nav-icon" />
-                    <span>Admin</span>
-                  </Link>
-                )}
-              </>
-            )}
-
-            {/* Action buttons section */}
-            <div style={actionButtonsStyle}>
-              {user ? (
+              {user && (
                 <>
                   <Link
-                    to="/account"
-                    style={{
-                      ...linkStyle('/account'),
-                      justifyContent: isMobile ? 'flex-start' : 'center',
-                    }}
-                    className={`epic-nav-link ${isActive('/account') ? 'active' : ''}`}
-                    onClick={() => setMobileMenuOpen(false)}
+                    to="/bookings"
+                    style={linkStyle('/bookings')}
+                    className={`epic-nav-link ${isActive('/bookings') ? 'active' : ''}`}
                   >
-                    {user.profileImage ? (
-                      <img
-                        src={user.profileImage}
-                        alt={user.name}
-                        style={{
-                          ...styles.profileImage,
-                          width: isMobile ? '36px' : '32px',
-                          height: isMobile ? '36px' : '32px',
-                        }}
-                        className="profile-image"
-                      />
-                    ) : (
-                      <User size={20} className="nav-icon" />
-                    )}
-                    <span>{user.name}</span>
+                    <CreditCard size={20} className="nav-icon" />
+                    <span>My Bookings</span>
                   </Link>
 
-                  {!isMobile && <TierBadge userId={user.id} />}
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      style={linkStyle('/admin')}
+                      className={`epic-nav-link ${isActive('/admin') ? 'active' : ''}`}
+                    >
+                      <Shield size={20} className="nav-icon" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
+                </>
+              )}
 
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'row' : 'row',
-                    gap: '0.5rem',
-                    marginTop: isMobile ? '0.5rem' : '0',
-                  }}>
+              {/* Desktop Action buttons */}
+              <div style={actionButtonsStyle}>
+                {user ? (
+                  <>
+                    <Link
+                      to="/account"
+                      style={linkStyle('/account')}
+                      className={`epic-nav-link ${isActive('/account') ? 'active' : ''}`}
+                    >
+                      {user.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt={user.name}
+                          style={{ ...styles.profileImage, width: '32px', height: '32px' }}
+                          className="profile-image"
+                        />
+                      ) : (
+                        <User size={20} className="nav-icon" />
+                      )}
+                      <span>{user.name}</span>
+                    </Link>
+
+                    <TierBadge userId={user.id} />
+
                     <button
                       onClick={toggleDarkMode}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: isMobile ? '0.875rem' : '0.75rem',
+                        padding: '0.75rem',
                         border: 'none',
                         borderRadius: '12px',
                         cursor: 'pointer',
                         fontWeight: '600',
                         background: 'rgba(16, 185, 129, 0.1)',
                         color: '#10b981',
-                        flex: isMobile ? 1 : 'none',
                       }}
                       className="epic-dark-mode-btn"
                       title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                     >
                       {darkMode ? <Sun size={20} className="theme-icon" /> : <Moon size={20} className="theme-icon" />}
-                      {isMobile && <span style={{ marginLeft: '0.5rem' }}>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
                     </button>
 
                     <button
@@ -428,23 +445,206 @@ function Navbar() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.5rem',
-                        padding: isMobile ? '0.875rem 1.25rem' : '0.75rem 1.25rem',
+                        padding: '0.75rem 1.25rem',
                         border: 'none',
                         borderRadius: '12px',
                         color: 'white',
                         fontWeight: '700',
-                        fontSize: isMobile ? '1rem' : '0.95rem',
+                        fontSize: '0.95rem',
                         cursor: 'pointer',
                         boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
                         background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                        flex: isMobile ? 1 : 'none',
                       }}
                       className="epic-logout-btn"
                     >
                       <LogOut size={20} className="nav-icon" />
                       <span>Logout</span>
                     </button>
-                  </div>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 1.5rem',
+                      textDecoration: 'none',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      fontWeight: '700',
+                      fontSize: '0.95rem',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                      cursor: 'pointer',
+                    }}
+                    className="epic-login-btn"
+                  >
+                    <LogIn size={20} />
+                    <span>Login</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Mobile Menu Drawer - Outside of nav */}
+      {isMobile && (
+        <>
+          {/* Backdrop */}
+          <div style={mobileDrawerBackdrop} onClick={() => setMobileMenuOpen(false)} />
+
+          {/* Drawer */}
+          <div style={mobileDrawer}>
+            {/* Drawer Header */}
+            <div style={mobileDrawerHeader}>
+              <span style={{ fontWeight: '700', fontSize: '1.1rem', color: (user && darkMode) ? '#fff' : '#1f2937' }}>
+                Menu
+              </span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  color: (user && darkMode) ? '#fff' : '#1f2937',
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Drawer Content - Navigation Links */}
+            <div style={mobileDrawerContent}>
+              <Link
+                to="/"
+                style={linkStyle('/')}
+                className={`epic-nav-link ${isActive('/') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Home size={20} className="nav-icon" />
+                <span>Home</span>
+              </Link>
+
+              <Link
+                to="/hotels"
+                style={linkStyle('/hotels')}
+                className={`epic-nav-link ${isActive('/hotels') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Hotel size={20} className="nav-icon" />
+                <span>Hotels</span>
+              </Link>
+
+              <Link
+                to="/trips"
+                style={linkStyle('/trips')}
+                className={`epic-nav-link ${isActive('/trips') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Plane size={20} className="nav-icon" />
+                <span>Trips</span>
+              </Link>
+
+              {user && (
+                <>
+                  <Link
+                    to="/bookings"
+                    style={linkStyle('/bookings')}
+                    className={`epic-nav-link ${isActive('/bookings') ? 'active' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <CreditCard size={20} className="nav-icon" />
+                    <span>My Bookings</span>
+                  </Link>
+
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      style={linkStyle('/admin')}
+                      className={`epic-nav-link ${isActive('/admin') ? 'active' : ''}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Shield size={20} className="nav-icon" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
+
+                  <Link
+                    to="/account"
+                    style={linkStyle('/account')}
+                    className={`epic-nav-link ${isActive('/account') ? 'active' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {user.profileImage ? (
+                      <img
+                        src={user.profileImage}
+                        alt={user.name}
+                        style={{ ...styles.profileImage, width: '36px', height: '36px' }}
+                        className="profile-image"
+                      />
+                    ) : (
+                      <User size={20} className="nav-icon" />
+                    )}
+                    <span>{user.name}</span>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Drawer Footer - Action buttons */}
+            <div style={mobileDrawerFooter}>
+              {user ? (
+                <>
+                  <button
+                    onClick={toggleDarkMode}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.875rem',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      color: '#10b981',
+                      width: '100%',
+                    }}
+                    className="epic-dark-mode-btn"
+                  >
+                    {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                    <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.875rem 1.25rem',
+                      border: 'none',
+                      borderRadius: '12px',
+                      color: 'white',
+                      fontWeight: '700',
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                      width: '100%',
+                    }}
+                    className="epic-logout-btn"
+                  >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                  </button>
                 </>
               ) : (
                 <Link
@@ -454,15 +654,15 @@ function Navbar() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: isMobile ? '1rem 1.5rem' : '0.75rem 1.5rem',
+                    padding: '1rem 1.5rem',
                     textDecoration: 'none',
                     borderRadius: '12px',
                     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                     color: 'white',
                     fontWeight: '700',
-                    fontSize: isMobile ? '1.1rem' : '0.95rem',
+                    fontSize: '1.1rem',
                     boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                    cursor: 'pointer',
+                    width: '100%',
                   }}
                   className="epic-login-btn"
                   onClick={() => setMobileMenuOpen(false)}
@@ -473,23 +673,7 @@ function Navbar() {
               )}
             </div>
           </div>
-        </div>
-      </nav>
-
-      {/* Mobile menu backdrop - behind menu but above page content */}
-      {isMobile && mobileMenuOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 1050, // Between page content and menu
-          }}
-          onClick={() => setMobileMenuOpen(false)}
-        />
+        </>
       )}
     </>
   );
