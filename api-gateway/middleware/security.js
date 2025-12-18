@@ -536,8 +536,12 @@ const idorProtection = (req, res, next) => {
   const userId = req.user?.id;
   const requestedUserId = req.params.userId || req.body.userId || req.body.user_id;
 
-  if (requestedUserId && userId !== requestedUserId && req.user?.role !== 'admin') {
-    console.warn(`🚫 IDOR attempt: User ${userId} tried to access user ${requestedUserId}`);
+  // Convert both to strings for comparison (handles ObjectId vs string mismatch)
+  const userIdStr = userId ? String(userId) : null;
+  const requestedUserIdStr = requestedUserId ? String(requestedUserId) : null;
+
+  if (requestedUserIdStr && userIdStr !== requestedUserIdStr && req.user?.role !== 'admin') {
+    console.warn(`🚫 IDOR attempt: User ${userIdStr} tried to access user ${requestedUserIdStr}`);
 
     return res.status(403).json({
       success: false,

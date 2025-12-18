@@ -4,7 +4,8 @@ import { bookingService, paymentService } from '../services/api';
 import {
   Calendar, CreditCard, Hotel, Plane, Loader, Download,
   CheckCircle, Clock, XCircle, AlertCircle, Filter, Search,
-  MapPin, Users, Bed, ArrowRight, TrendingUp, DollarSign, Sparkles
+  MapPin, Users, Bed, ArrowRight, TrendingUp, DollarSign, Sparkles,
+  FileText
 } from 'lucide-react';
 
 function Bookings() {
@@ -110,6 +111,125 @@ function Bookings() {
   };
 
   const stats = calculateStats();
+
+  // Generate and download PDF receipt for a payment
+  const downloadPaymentReceipt = (payment) => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Create PDF content as HTML
+    const receiptContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Receipt - House of Paradise</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; background: #fff; color: #1f2937; }
+          .header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #10b981; }
+          .logo { font-size: 28px; font-weight: 800; color: #10b981; margin-bottom: 5px; }
+          .logo-sub { font-size: 12px; color: #6b7280; letter-spacing: 2px; }
+          .receipt-title { font-size: 24px; font-weight: 700; margin-top: 20px; color: #1f2937; }
+          .receipt-number { font-size: 14px; color: #6b7280; margin-top: 5px; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-size: 14px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+          .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+          .row:last-child { border-bottom: none; }
+          .label { color: #6b7280; font-size: 14px; }
+          .value { font-weight: 600; color: #1f2937; font-size: 14px; text-align: right; }
+          .total-section { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 25px; border-radius: 12px; margin-top: 30px; }
+          .total-row { display: flex; justify-content: space-between; align-items: center; }
+          .total-label { font-size: 18px; font-weight: 600; }
+          .total-value { font-size: 32px; font-weight: 800; }
+          .status-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+          .status-completed { background: #d1fae5; color: #059669; }
+          .status-pending { background: #fef3c7; color: #d97706; }
+          .status-failed { background: #fee2e2; color: #dc2626; }
+          .footer { margin-top: 50px; text-align: center; padding-top: 30px; border-top: 1px solid #e5e7eb; }
+          .footer-text { font-size: 12px; color: #9ca3af; line-height: 1.8; }
+          .footer-brand { font-weight: 700; color: #10b981; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">✈ House of Paradise</div>
+          <div class="logo-sub">YOUR JOURNEY BEGINS HERE</div>
+          <div class="receipt-title">Payment Receipt</div>
+          <div class="receipt-number">Transaction #${payment.transaction_id || 'N/A'}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Customer Information</div>
+          <div class="row">
+            <span class="label">Name</span>
+            <span class="value">${user.name || 'Guest'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Email</span>
+            <span class="value">${user.email || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Payment Details</div>
+          <div class="row">
+            <span class="label">Transaction ID</span>
+            <span class="value">${payment.transaction_id || 'N/A'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Booking Type</span>
+            <span class="value">${payment.booking_type ? payment.booking_type.charAt(0).toUpperCase() + payment.booking_type.slice(1) : 'N/A'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Booking ID</span>
+            <span class="value">${payment.booking_id || 'N/A'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Payment Method</span>
+            <span class="value">${payment.payment_method ? payment.payment_method.replace('_', ' ').toUpperCase() : 'N/A'}</span>
+          </div>
+          <div class="row">
+            <span class="label">Date</span>
+            <span class="value">${new Date(payment.created_at).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          </div>
+          <div class="row">
+            <span class="label">Time</span>
+            <span class="value">${new Date(payment.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          <div class="row">
+            <span class="label">Status</span>
+            <span class="value"><span class="status-badge status-${payment.status?.toLowerCase()}">${payment.status?.toUpperCase() || 'N/A'}</span></span>
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div class="total-row">
+            <span class="total-label">Total Amount Paid</span>
+            <span class="total-value">$${payment.amount?.toFixed(2) || '0.00'}</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p class="footer-text">
+            Thank you for choosing <span class="footer-brand">House of Paradise</span>!<br>
+            This receipt was generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.<br>
+            For any questions, please contact support@houseofparadise.com
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create a new window and print/save as PDF
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(receiptContent);
+    printWindow.document.close();
+
+    // Wait for content to load, then trigger print dialog
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
 
   if (loading) {
     return (
@@ -530,12 +650,31 @@ function Bookings() {
                             {payment.booking_type || 'N/A'} • {payment.payment_method || 'N/A'}
                           </div>
                         </div>
-                        <div style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: '0.75rem', textAlign: 'right' }}>
-                          {new Date(payment.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: '0.75rem', textAlign: 'right' }}>
+                            {new Date(payment.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          <button
+                            onClick={() => downloadPaymentReceipt(payment)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '0.5rem',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                              color: '#10b981',
+                              cursor: 'pointer',
+                            }}
+                            title="Download Receipt"
+                          >
+                            <FileText size={18} />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -552,6 +691,7 @@ function Bookings() {
                 {/* Table Header */}
                 <div style={{
                   ...styles.tableHeader,
+                  gridTemplateColumns: 'repeat(7, 1fr)',
                   background: darkMode ? '#0f0f1a' : '#f9fafb',
                   color: darkMode ? '#e5e7eb' : '#374151',
                 }}>
@@ -561,6 +701,7 @@ function Bookings() {
                   <div style={styles.tableCell}>Method</div>
                   <div style={styles.tableCell}>Status</div>
                   <div style={styles.tableCell}>Date</div>
+                  <div style={{ ...styles.tableCell, justifyContent: 'center' }}>Receipt</div>
                 </div>
 
                 {/* Table Rows */}
@@ -573,6 +714,7 @@ function Bookings() {
                       key={payment.id}
                       style={{
                         ...styles.tableRow,
+                        gridTemplateColumns: 'repeat(7, 1fr)',
                         background: index % 2 === 0
                           ? darkMode ? '#1a1a2e' : '#ffffff'
                           : darkMode ? '#16213e' : '#f9fafb',
@@ -627,6 +769,27 @@ function Bookings() {
                           year: 'numeric',
                         })}
                       </div>
+                      <div style={{ ...styles.tableCell, justifyContent: 'center' }}>
+                        <button
+                          onClick={() => downloadPaymentReceipt(payment)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                            color: '#10b981',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          className="download-btn"
+                          title="Download Receipt"
+                        >
+                          <FileText size={18} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -651,6 +814,11 @@ const bookingAnimations = `
 
   .hover-lift:hover {
     transform: translateY(-4px) scale(1.02);
+  }
+
+  .download-btn:hover {
+    background: rgba(16, 185, 129, 0.25) !important;
+    transform: scale(1.1);
   }
 
   .hover-row:hover {

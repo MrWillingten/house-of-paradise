@@ -15,7 +15,9 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(node create-admin.js:*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(cd /c/Users/son5a/Desktop/Cloud Project Travel Booking Microservices/travel-booking-microservices)",
+      "Bash(docker-compose:*)"
     ]
   }
 }
