@@ -236,23 +236,26 @@ function Bookings() {
             {filteredBookings.length === 0 ? (
               <div style={{
                 ...styles.empty,
-                background: darkMode ? '#1a1a2e' : '#ffffff',
-                border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
+                background: darkMode
+                  ? 'linear-gradient(135deg, #1e293b 0%, #1a1a2e 100%)'
+                  : '#ffffff',
+                border: darkMode ? '2px solid #334155' : '2px solid #e5e7eb',
                 padding: isMobile ? '2rem 1rem' : '4rem 2rem',
+                marginTop: '1rem',
               }}>
                 <div style={styles.emptyIcon}>
-                  <Hotel size={isMobile ? 48 : 64} color={darkMode ? '#374151' : '#d1d5db'} />
+                  <Hotel size={isMobile ? 48 : 64} color={darkMode ? '#10b981' : '#d1d5db'} />
                 </div>
                 <h3 style={{
                   ...styles.emptyTitle,
-                  color: darkMode ? '#fff' : '#1f2937',
+                  color: darkMode ? '#f1f5f9' : '#1f2937',
                   fontSize: isMobile ? '1.25rem' : '2rem',
                 }}>
                   No bookings found
                 </h3>
                 <p style={{
                   ...styles.emptyText,
-                  color: darkMode ? '#9ca3af' : '#6b7280',
+                  color: darkMode ? '#cbd5e1' : '#6b7280',
                   fontSize: isMobile ? '0.9rem' : '1.1rem',
                 }}>
                   Start exploring amazing hotels and trips!
@@ -475,14 +478,17 @@ function Bookings() {
             {filteredPayments.length === 0 ? (
               <div style={{
                 ...styles.empty,
-                background: darkMode ? '#1a1a2e' : '#ffffff',
-                border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
+                background: darkMode
+                  ? 'linear-gradient(135deg, #1e293b 0%, #1a1a2e 100%)'
+                  : '#ffffff',
+                border: darkMode ? '2px solid #334155' : '2px solid #e5e7eb',
                 padding: isMobile ? '2rem 1rem' : '4rem 2rem',
+                marginTop: '1rem',
               }}>
-                <CreditCard size={isMobile ? 48 : 64} color={darkMode ? '#374151' : '#d1d5db'} />
+                <CreditCard size={isMobile ? 48 : 64} color={darkMode ? '#10b981' : '#d1d5db'} />
                 <h3 style={{
                   ...styles.emptyTitle,
-                  color: darkMode ? '#fff' : '#1f2937',
+                  color: darkMode ? '#f1f5f9' : '#1f2937',
                   fontSize: isMobile ? '1.25rem' : '2rem',
                 }}>
                   No payment history
