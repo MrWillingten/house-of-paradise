@@ -725,13 +725,22 @@ async function initializeEmailProvider() {
   // Option 1: Brevo (Sendinblue) - HTTP API (works on Render free tier)
   if (process.env.BREVO_API_KEY) {
     console.log('📧 Configuring Brevo (HTTP API)...');
+
+    // Extract clean email from EMAIL_FROM (handles "Name <email>" format)
+    let fromEmail = process.env.EMAIL_FROM || 'service.houseofparadise@gmail.com';
+    const emailMatch = fromEmail.match(/<([^>]+)>/);
+    if (emailMatch) {
+      fromEmail = emailMatch[1]; // Extract email from "Name <email>" format
+    }
+    fromEmail = fromEmail.trim();
+
     emailProvider = {
       type: 'brevo',
       apiKey: process.env.BREVO_API_KEY,
-      fromEmail: process.env.EMAIL_FROM || 'service.houseofparadise@gmail.com',
+      fromEmail: fromEmail,
       fromName: 'House of Paradise'
     };
-    console.log('✅ Brevo email provider configured');
+    console.log(`✅ Brevo configured with sender: ${fromEmail}`);
     return;
   }
 
