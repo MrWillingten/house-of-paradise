@@ -14,6 +14,7 @@ function Bookings() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // all, hotels, trips
   const [activePaymentFilter, setActivePaymentFilter] = useState('all'); // all, completed, pending, failed
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [darkMode, setDarkMode] = useState(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.darkMode || false;
@@ -21,6 +22,18 @@ function Bookings() {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user._id || user.id;
+
+  // Get responsive styles based on screen size
+  const responsiveStyles = getResponsiveStyles(isMobile);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -122,61 +135,61 @@ function Bookings() {
       <style>{bookingAnimations}</style>
 
       <div style={{
-        ...styles.container,
+        ...responsiveStyles.container,
         background: darkMode
           ? 'radial-gradient(ellipse at top, #0a0a1a 0%, #050510 50%, #000000 100%)'
           : 'linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',
       }}>
         {/* Hero Header */}
         <div style={{
-          ...styles.hero,
+          ...responsiveStyles.hero,
           background: darkMode
             ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
             : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
         }}>
-          <div style={styles.heroContent}>
-            <div className="scroll-reveal" style={styles.heroIcon}>
+          <div style={responsiveStyles.heroContent}>
+            <div className="scroll-reveal" style={responsiveStyles.heroIcon}>
               <Sparkles size={32} color="#ffffff" />
             </div>
-            <h1 className="paradise-title" style={styles.title}>
+            <h1 className="paradise-title" style={responsiveStyles.title}>
               My Bookings
             </h1>
-            <p style={styles.subtitle}>
+            <p style={responsiveStyles.subtitle}>
               Track and manage all your reservations in one place
             </p>
 
             {/* Stats Cards */}
-            <div style={styles.statsRow}>
+            <div style={responsiveStyles.statsRow}>
               <div className="scroll-reveal" style={{
-                ...styles.statCard,
+                ...responsiveStyles.statCard,
                 background: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.15)',
               }}>
-                <DollarSign size={16} color="#ffffff" />
-                <div style={styles.statContent}>
-                  <span style={styles.statValue}>${stats.totalSpent.toFixed(2)}</span>
-                  <span style={styles.statLabel}>spent</span>
+                <DollarSign size={isMobile ? 14 : 16} color="#ffffff" />
+                <div style={responsiveStyles.statContent}>
+                  <span style={responsiveStyles.statValue}>${stats.totalSpent.toFixed(2)}</span>
+                  <span style={responsiveStyles.statLabel}>spent</span>
                 </div>
               </div>
 
               <div className="scroll-reveal" style={{
-                ...styles.statCard,
+                ...responsiveStyles.statCard,
                 background: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.15)',
               }}>
-                <TrendingUp size={16} color="#ffffff" />
-                <div style={styles.statContent}>
-                  <span style={styles.statValue}>{stats.completedBookings}</span>
-                  <span style={styles.statLabel}>completed</span>
+                <TrendingUp size={isMobile ? 14 : 16} color="#ffffff" />
+                <div style={responsiveStyles.statContent}>
+                  <span style={responsiveStyles.statValue}>{stats.completedBookings}</span>
+                  <span style={responsiveStyles.statLabel}>completed</span>
                 </div>
               </div>
 
               <div className="scroll-reveal" style={{
-                ...styles.statCard,
+                ...responsiveStyles.statCard,
                 background: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.15)',
               }}>
-                <Calendar size={16} color="#ffffff" />
-                <div style={styles.statContent}>
-                  <span style={styles.statValue}>{stats.upcomingBookings}</span>
-                  <span style={styles.statLabel}>upcoming</span>
+                <Calendar size={isMobile ? 14 : 16} color="#ffffff" />
+                <div style={responsiveStyles.statContent}>
+                  <span style={responsiveStyles.statValue}>{stats.upcomingBookings}</span>
+                  <span style={responsiveStyles.statLabel}>upcoming</span>
                 </div>
               </div>
             </div>
@@ -184,26 +197,26 @@ function Bookings() {
         </div>
 
         {/* Main Content */}
-        <div style={styles.content}>
+        <div style={responsiveStyles.content}>
           {/* Bookings Section */}
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
+          <section style={responsiveStyles.section}>
+            <div style={responsiveStyles.sectionHeader}>
               <h2 style={{
-                ...styles.sectionTitle,
+                ...responsiveStyles.sectionTitle,
                 color: darkMode ? '#ffffff' : '#1f2937',
               }}>
-                <Hotel size={28} color="#10b981" />
+                <Hotel size={isMobile ? 22 : 28} color="#10b981" />
                 Your Reservations
               </h2>
 
               {/* Tab Filters */}
-              <div style={styles.tabs}>
+              <div style={responsiveStyles.tabs}>
                 {['all', 'hotels', 'trips'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     style={{
-                      ...styles.tab,
+                      ...responsiveStyles.tab,
                       background: activeTab === tab
                         ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                         : darkMode ? '#2a2a3e' : '#f3f4f6',
@@ -225,33 +238,40 @@ function Bookings() {
                 ...styles.empty,
                 background: darkMode ? '#1a1a2e' : '#ffffff',
                 border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
+                padding: isMobile ? '2rem 1rem' : '4rem 2rem',
               }}>
                 <div style={styles.emptyIcon}>
-                  <Hotel size={64} color={darkMode ? '#374151' : '#d1d5db'} />
+                  <Hotel size={isMobile ? 48 : 64} color={darkMode ? '#374151' : '#d1d5db'} />
                 </div>
                 <h3 style={{
                   ...styles.emptyTitle,
                   color: darkMode ? '#fff' : '#1f2937',
+                  fontSize: isMobile ? '1.25rem' : '2rem',
                 }}>
                   No bookings found
                 </h3>
                 <p style={{
                   ...styles.emptyText,
                   color: darkMode ? '#9ca3af' : '#6b7280',
+                  fontSize: isMobile ? '0.9rem' : '1.1rem',
                 }}>
                   Start exploring amazing hotels and trips!
                 </p>
                 <button
                   onClick={() => navigate('/hotels')}
-                  style={styles.emptyButton}
+                  style={{
+                    ...styles.emptyButton,
+                    padding: isMobile ? '0.75rem 1.5rem' : '1rem 2rem',
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                  }}
                   className="clickable hover-lift"
                 >
-                  <ArrowRight size={20} />
+                  <ArrowRight size={isMobile ? 18 : 20} />
                   <span>Explore Now</span>
                 </button>
               </div>
             ) : (
-              <div style={styles.grid}>
+              <div style={responsiveStyles.grid}>
                 {filteredBookings.map((booking, index) => {
                   const statusInfo = getStatusColor(booking.status);
                   const StatusIcon = statusInfo.icon;
@@ -420,24 +440,24 @@ function Bookings() {
           </section>
 
           {/* Payment History Section */}
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
+          <section style={responsiveStyles.section}>
+            <div style={responsiveStyles.sectionHeader}>
               <h2 style={{
-                ...styles.sectionTitle,
+                ...responsiveStyles.sectionTitle,
                 color: darkMode ? '#ffffff' : '#1f2937',
               }}>
-                <CreditCard size={28} color="#10b981" />
+                <CreditCard size={isMobile ? 22 : 28} color="#10b981" />
                 Payment History
               </h2>
 
               {/* Payment Filters */}
-              <div style={styles.tabs}>
+              <div style={responsiveStyles.tabs}>
                 {['all', 'completed', 'pending', 'failed'].map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setActivePaymentFilter(filter)}
                     style={{
-                      ...styles.tab,
+                      ...responsiveStyles.tab,
                       background: activePaymentFilter === filter
                         ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                         : darkMode ? '#2a2a3e' : '#f3f4f6',
@@ -457,16 +477,67 @@ function Bookings() {
                 ...styles.empty,
                 background: darkMode ? '#1a1a2e' : '#ffffff',
                 border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
+                padding: isMobile ? '2rem 1rem' : '4rem 2rem',
               }}>
-                <CreditCard size={64} color={darkMode ? '#374151' : '#d1d5db'} />
+                <CreditCard size={isMobile ? 48 : 64} color={darkMode ? '#374151' : '#d1d5db'} />
                 <h3 style={{
                   ...styles.emptyTitle,
                   color: darkMode ? '#fff' : '#1f2937',
+                  fontSize: isMobile ? '1.25rem' : '2rem',
                 }}>
                   No payment history
                 </h3>
               </div>
+            ) : isMobile ? (
+              // Mobile: Display as cards
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filteredPayments.map((payment) => {
+                  const statusInfo = getStatusColor(payment.status);
+                  const StatusIcon = statusInfo.icon;
+
+                  return (
+                    <div
+                      key={payment.id}
+                      style={{
+                        background: darkMode ? '#1a1a2e' : '#ffffff',
+                        border: darkMode ? '2px solid #2a2a3e' : '2px solid #e5e7eb',
+                        borderRadius: '16px',
+                        padding: '1rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <span style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: '0.75rem' }}>
+                          #{payment.transaction_id?.slice(-8).toUpperCase() || 'N/A'}
+                        </span>
+                        <div style={{ ...styles.statusBadge, background: statusInfo.bg, padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}>
+                          <StatusIcon size={12} />
+                          <span>{payment.status}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ color: darkMode ? '#e5e7eb' : '#1f2937', fontWeight: '700', fontSize: '1.25rem' }}>
+                            ${payment.amount}
+                          </div>
+                          <div style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: '0.8rem' }}>
+                            {payment.booking_type || 'N/A'} • {payment.payment_method || 'N/A'}
+                          </div>
+                        </div>
+                        <div style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: '0.75rem', textAlign: 'right' }}>
+                          {new Date(payment.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
+              // Desktop: Display as table
               <div style={{
                 ...styles.paymentTable,
                 background: darkMode ? '#1a1a2e' : '#ffffff',
@@ -581,13 +652,14 @@ const bookingAnimations = `
   }
 `;
 
-const styles = {
+// Helper function to get responsive styles
+const getResponsiveStyles = (isMobile) => ({
   container: {
     minHeight: '100vh',
     transition: 'background 1.2s ease',
   },
   hero: {
-    padding: '2rem 2rem 1.5rem 2rem',
+    padding: isMobile ? '1.5rem 1rem 1rem' : '2rem 2rem 1.5rem 2rem',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -602,25 +674,25 @@ const styles = {
     display: 'none',
   },
   title: {
-    fontSize: '2.25rem',
+    fontSize: isMobile ? '1.5rem' : '2.25rem',
     fontWeight: '800',
     color: '#ffffff',
     marginBottom: '0.25rem',
   },
   subtitle: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.875rem' : '1rem',
     color: 'rgba(255,255,255,0.85)',
-    marginBottom: '1.25rem',
+    marginBottom: isMobile ? '1rem' : '1.25rem',
     fontWeight: '500',
   },
   statsRow: {
     display: 'flex',
-    gap: '1rem',
+    gap: isMobile ? '0.5rem' : '1rem',
     justifyContent: 'center',
     flexWrap: 'wrap',
   },
   statCard: {
-    padding: '0.625rem 1rem',
+    padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 1rem',
     borderRadius: '12px',
     backdropFilter: 'blur(20px)',
     display: 'flex',
@@ -628,6 +700,7 @@ const styles = {
     gap: '0.5rem',
     border: '1px solid rgba(255,255,255,0.2)',
     transition: 'all 0.3s ease',
+    minWidth: isMobile ? 'auto' : 'auto',
   },
   statContent: {
     display: 'flex',
@@ -635,58 +708,64 @@ const styles = {
     gap: '0.375rem',
   },
   statValue: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.875rem' : '1rem',
     fontWeight: '700',
     color: '#ffffff',
     lineHeight: 1,
   },
   statLabel: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.75rem' : '0.85rem',
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
   content: {
     maxWidth: '1400px',
     margin: '0 auto',
-    padding: '2rem',
+    padding: isMobile ? '1rem' : '2rem',
   },
   section: {
-    marginBottom: '4rem',
+    marginBottom: isMobile ? '2rem' : '4rem',
   },
   sectionHeader: {
     display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    flexWrap: 'wrap',
+    alignItems: isMobile ? 'flex-start' : 'center',
+    marginBottom: isMobile ? '1rem' : '2rem',
     gap: '1rem',
   },
   sectionTitle: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-    fontSize: '2rem',
+    fontSize: isMobile ? '1.25rem' : '2rem',
     fontWeight: '800',
   },
   tabs: {
     display: 'flex',
-    gap: '0.75rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
     flexWrap: 'wrap',
+    width: isMobile ? '100%' : 'auto',
   },
   tab: {
-    padding: '0.75rem 1.5rem',
+    padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
     borderRadius: '12px',
     border: 'none',
     fontWeight: '600',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.8rem' : '0.95rem',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+    flex: isMobile ? '1' : 'none',
+    textAlign: 'center',
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-    gap: '2rem',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(380px, 1fr))',
+    gap: isMobile ? '1rem' : '2rem',
   },
+});
+
+const styles = {
   card: {
     borderRadius: '20px',
     overflow: 'hidden',

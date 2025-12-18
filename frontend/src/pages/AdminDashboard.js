@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { hotelService, tripService, authService, adminService, bookingService, paymentService } from '../services/api';
 import {
   Plus, Edit2, Trash2, Hotel, Plane, LogOut, Users, BarChart3, Terminal,
-  Shield, ShieldOff, Key, UserX, Search, RefreshCw, ChevronRight, X,
+  Shield, ShieldOff, Key, UserX, Search, RefreshCw, ChevronRight, X, Menu,
   DollarSign, CreditCard, Activity, Server, Database, Globe, Clock,
   CheckCircle, XCircle, AlertTriangle, Eye, EyeOff, Copy, Send,
   Settings, Moon, Sun, Download, Upload, Filter, MoreVertical,
@@ -52,6 +52,10 @@ function AdminDashboard() {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
 
+  // Mobile responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // CLI Terminal state
   const [cliOpen, setCliOpen] = useState(false);
   const [cliHistory, setCliHistory] = useState([
@@ -75,6 +79,31 @@ function AdminDashboard() {
     trip: 'healthy',
     payment: 'healthy'
   });
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, sidebarOpen]);
 
   // Sync dark mode with user preference in localStorage (linked to Navbar toggle)
   useEffect(() => {
@@ -541,18 +570,34 @@ function AdminDashboard() {
     hotel.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Styles
-  const styles = getStyles(darkMode);
+  // Styles - pass isMobile for responsive design
+  const styles = getStyles(darkMode, isMobile);
 
   return (
     <div style={styles.container}>
+      {/* Mobile sidebar backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          style={styles.sidebarBackdrop}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div style={styles.sidebar}>
+      <div style={{
+        ...styles.sidebar,
+        transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+      }}>
         <div style={styles.sidebarHeader}>
           <div style={styles.logo}>
-            <Home size={28} />
+            <Home size={isMobile ? 24 : 28} />
             <span style={styles.logoText}>HoP Admin</span>
           </div>
+          {isMobile && (
+            <button onClick={() => setSidebarOpen(false)} style={styles.sidebarClose}>
+              <X size={24} />
+            </button>
+          )}
         </div>
 
         <nav style={styles.nav}>
@@ -565,7 +610,7 @@ function AdminDashboard() {
           ].map(item => (
             <button
               key={item.id}
-              onClick={() => { setActiveTab(item.id); setSearchQuery(''); }}
+              onClick={() => { setActiveTab(item.id); setSearchQuery(''); if (isMobile) setSidebarOpen(false); }}
               style={{
                 ...styles.navButton,
                 ...(activeTab === item.id ? styles.navButtonActive : {})
@@ -578,7 +623,7 @@ function AdminDashboard() {
           ))}
 
           {/* CLI Button in nav section */}
-          <button onClick={() => setCliOpen(true)} style={styles.cliButtonNav}>
+          <button onClick={() => { setCliOpen(true); if (isMobile) setSidebarOpen(false); }} style={styles.cliButtonNav}>
             <Terminal size={20} />
             <span>Open CLI</span>
           </button>
@@ -597,6 +642,11 @@ function AdminDashboard() {
         {/* Top Bar */}
         <div style={styles.topBar}>
           <div style={styles.topBarLeft}>
+            {isMobile && (
+              <button onClick={() => setSidebarOpen(true)} style={styles.menuButton}>
+                <Menu size={24} />
+              </button>
+            )}
             <h1 style={styles.pageTitle}>
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'users' && 'User Management'}
@@ -610,10 +660,12 @@ function AdminDashboard() {
             <button onClick={fetchAllData} style={styles.iconButton} title="Refresh">
               <RefreshCw size={18} className={loading ? 'spin' : ''} />
             </button>
-            <div style={styles.adminBadge}>
-              <Shield size={14} />
-              <span>Admin</span>
-            </div>
+            {!isMobile && (
+              <div style={styles.adminBadge}>
+                <Shield size={14} />
+                <span>Admin</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1468,8 +1520,8 @@ function AdminDashboard() {
   );
 }
 
-// Dynamic styles based on dark mode
-function getStyles(darkMode) {
+// Dynamic styles based on dark mode and mobile
+function getStyles(darkMode, isMobile = false) {
   const colors = {
     bg: darkMode ? '#0a0a0a' : '#f9fafb',
     surface: darkMode ? '#1a1a2e' : '#ffffff',
@@ -1489,19 +1541,41 @@ function getStyles(darkMode) {
       color: colors.text,
     },
 
+    // Mobile sidebar backdrop
+    sidebarBackdrop: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.6)',
+      zIndex: 150,
+    },
+
     // Sidebar
     sidebar: {
-      width: '260px',
+      width: isMobile ? '280px' : '260px',
       background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)',
       display: 'flex',
       flexDirection: 'column',
       position: 'fixed',
       height: '100vh',
-      zIndex: 100,
+      zIndex: 200,
+      transition: 'transform 0.3s ease',
+    },
+    sidebarClose: {
+      background: 'none',
+      border: 'none',
+      color: 'rgba(255,255,255,0.7)',
+      cursor: 'pointer',
+      padding: '0.25rem',
     },
     sidebarHeader: {
-      padding: '1.5rem',
+      padding: isMobile ? '1rem' : '1.5rem',
       borderBottom: '1px solid rgba(255,255,255,0.1)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     logo: {
       display: 'flex',
@@ -1596,29 +1670,40 @@ function getStyles(darkMode) {
     // Main Content
     main: {
       flex: 1,
-      marginLeft: '260px',
+      marginLeft: isMobile ? 0 : '260px',
       display: 'flex',
       flexDirection: 'column',
+    },
+    menuButton: {
+      background: 'none',
+      border: 'none',
+      color: colors.text,
+      cursor: 'pointer',
+      padding: '0.25rem',
+      marginRight: '0.75rem',
     },
     topBar: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '1rem 2rem',
+      padding: isMobile ? '0.75rem 1rem' : '1rem 2rem',
       background: colors.surface,
       borderBottom: `1px solid ${colors.border}`,
       position: 'sticky',
       top: 0,
       zIndex: 50,
     },
-    topBarLeft: {},
+    topBarLeft: {
+      display: 'flex',
+      alignItems: 'center',
+    },
     topBarRight: {
       display: 'flex',
       alignItems: 'center',
       gap: '0.75rem',
     },
     pageTitle: {
-      fontSize: '1.5rem',
+      fontSize: isMobile ? '1.125rem' : '1.5rem',
       fontWeight: '700',
       margin: 0,
     },
@@ -1683,25 +1768,26 @@ function getStyles(darkMode) {
     // Content
     content: {
       flex: 1,
-      padding: '2rem',
+      padding: isMobile ? '1rem' : '2rem',
     },
 
     // Dashboard
     dashboard: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '2rem',
+      gap: isMobile ? '1rem' : '2rem',
     },
     statsGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-      gap: '1.5rem',
+      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(220px, 1fr))',
+      gap: isMobile ? '0.75rem' : '1.5rem',
     },
     statCard: {
       display: 'flex',
-      alignItems: 'center',
-      gap: '1.25rem',
-      padding: '1.5rem',
+      alignItems: isMobile ? 'flex-start' : 'center',
+      flexDirection: isMobile ? 'column' : 'row',
+      gap: isMobile ? '0.75rem' : '1.25rem',
+      padding: isMobile ? '1rem' : '1.5rem',
       borderRadius: '16px',
       color: '#ffffff',
     },
@@ -1709,19 +1795,19 @@ function getStyles(darkMode) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '56px',
-      height: '56px',
+      width: isMobile ? '40px' : '56px',
+      height: isMobile ? '40px' : '56px',
       background: 'rgba(255,255,255,0.2)',
       borderRadius: '12px',
     },
     statInfo: {},
     statNumber: {
-      fontSize: '2rem',
+      fontSize: isMobile ? '1.5rem' : '2rem',
       fontWeight: '700',
       lineHeight: 1.2,
     },
     statLabel: {
-      fontSize: '0.875rem',
+      fontSize: isMobile ? '0.75rem' : '0.875rem',
       opacity: 0.9,
     },
 
@@ -1845,14 +1931,16 @@ function getStyles(darkMode) {
     // Toolbar
     toolbar: {
       display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginBottom: '1.5rem',
+      alignItems: isMobile ? 'stretch' : 'center',
+      flexDirection: isMobile ? 'column' : 'row',
+      gap: isMobile ? '0.75rem' : '1rem',
+      marginBottom: isMobile ? '1rem' : '1.5rem',
       flexWrap: 'wrap',
     },
     searchBox: {
-      flex: 1,
-      minWidth: '200px',
+      flex: isMobile ? 'none' : 1,
+      width: isMobile ? '100%' : 'auto',
+      minWidth: isMobile ? 'auto' : '200px',
       position: 'relative',
     },
     searchIcon: {
@@ -1906,10 +1994,10 @@ function getStyles(darkMode) {
       background: colors.surface,
       borderRadius: '16px',
       border: `1px solid ${colors.border}`,
-      overflow: 'hidden',
+      overflow: isMobile ? 'visible' : 'hidden',
     },
     tableHeader: {
-      display: 'flex',
+      display: isMobile ? 'none' : 'flex',
       alignItems: 'center',
       padding: '1rem 1.5rem',
       background: colors.surfaceHover,
@@ -1921,9 +2009,9 @@ function getStyles(darkMode) {
       borderBottom: `1px solid ${colors.border}`,
     },
     tableRow: {
-      display: 'flex',
+      display: isMobile ? 'block' : 'flex',
       alignItems: 'center',
-      padding: '1rem 1.5rem',
+      padding: isMobile ? '1rem' : '1rem 1.5rem',
       borderBottom: `1px solid ${colors.border}`,
       transition: 'background 0.2s ease',
     },
@@ -2068,18 +2156,19 @@ function getStyles(darkMode) {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1000,
-      padding: '2rem',
+      padding: isMobile ? '0.5rem' : '2rem',
     },
     cliContainer: {
       width: '100%',
-      maxWidth: '800px',
-      height: '500px',
+      maxWidth: isMobile ? '100%' : '800px',
+      height: isMobile ? '100%' : '500px',
+      maxHeight: isMobile ? '100vh' : 'none',
       background: '#0d1117',
-      borderRadius: '12px',
+      borderRadius: isMobile ? '0' : '12px',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      border: '1px solid #30363d',
+      border: isMobile ? 'none' : '1px solid #30363d',
     },
     cliHeader: {
       display: 'flex',
@@ -2152,17 +2241,18 @@ function getStyles(darkMode) {
       bottom: 0,
       background: 'rgba(0,0,0,0.6)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: isMobile ? 'flex-end' : 'center',
       justifyContent: 'center',
       zIndex: 1000,
-      padding: '2rem',
+      padding: isMobile ? '0' : '2rem',
     },
     modal: {
       width: '100%',
-      maxWidth: '500px',
+      maxWidth: isMobile ? '100%' : '500px',
+      maxHeight: isMobile ? '90vh' : 'none',
       background: colors.surface,
-      borderRadius: '16px',
-      overflow: 'hidden',
+      borderRadius: isMobile ? '16px 16px 0 0' : '16px',
+      overflow: isMobile ? 'auto' : 'hidden',
       border: `1px solid ${colors.border}`,
     },
     modalHeader: {
@@ -2199,7 +2289,7 @@ function getStyles(darkMode) {
     },
     formRow: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
       gap: '1rem',
     },
     formGroup: {

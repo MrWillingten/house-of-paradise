@@ -176,28 +176,30 @@ function Navbar() {
     cursor: 'pointer',
     padding: '0.5rem',
     color: (user && darkMode) ? '#fff' : '#1f2937',
-    zIndex: 1001,
+    zIndex: 1200, // Higher than menu overlay
   };
 
-  const linksContainerStyle = {
-    display: isMobile ? (mobileMenuOpen ? 'flex' : 'none') : 'flex',
-    flexDirection: isMobile ? 'column' : 'row',
-    alignItems: isMobile ? 'stretch' : 'center',
-    gap: isMobile ? '0.5rem' : '0.5rem',
-    position: isMobile ? 'fixed' : 'static',
-    top: isMobile ? '0' : 'auto',
-    left: isMobile ? '0' : 'auto',
-    right: isMobile ? '0' : 'auto',
-    bottom: isMobile ? '0' : 'auto',
-    background: isMobile
-      ? (user && darkMode)
-        ? 'rgba(10, 10, 10, 0.98)'
-        : 'rgba(255, 255, 255, 0.98)'
-      : 'transparent',
-    padding: isMobile ? '80px 1.5rem 2rem' : '0',
-    backdropFilter: isMobile ? 'blur(20px)' : 'none',
-    overflowY: isMobile ? 'auto' : 'visible',
-    zIndex: isMobile ? 999 : 'auto',
+  // Desktop: show inline, Mobile: hide completely unless menu is open
+  const linksContainerStyle = isMobile ? {
+    display: mobileMenuOpen ? 'flex' : 'none',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: '0.5rem',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: (user && darkMode) ? 'rgba(10, 10, 10, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+    padding: '80px 1.5rem 2rem',
+    backdropFilter: 'blur(20px)',
+    overflowY: 'auto',
+    zIndex: 1100,
+  } : {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '0.5rem',
   };
 
   const linkStyle = (path) => ({
@@ -296,7 +298,7 @@ function Navbar() {
                   cursor: 'pointer',
                   padding: '0.5rem',
                   color: (user && darkMode) ? '#fff' : '#1f2937',
-                  zIndex: 1002,
+                  zIndex: 1150,
                 }}
               >
                 <X size={28} />
@@ -474,7 +476,7 @@ function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile menu backdrop */}
+      {/* Mobile menu backdrop - behind menu but above page content */}
       {isMobile && mobileMenuOpen && (
         <div
           style={{
@@ -484,7 +486,7 @@ function Navbar() {
             right: 0,
             bottom: 0,
             background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 998,
+            zIndex: 1050, // Between page content and menu
           }}
           onClick={() => setMobileMenuOpen(false)}
         />
