@@ -106,7 +106,8 @@ function Navbar() {
     setDarkMode(false);
     document.body.classList.remove('dark-mode');
 
-    navigate('/login');
+    // Redirect to Home with full page refresh
+    window.location.href = '/';
   };
 
   const toggleDarkMode = () => {
