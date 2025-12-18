@@ -11,6 +11,16 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { hotel, bookingDetails } = location.state || {};
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -265,29 +275,168 @@ const Checkout = () => {
     return parts.length ? parts.join(' ') : value;
   };
 
+  // Responsive styles
+  const responsiveStyles = {
+    container: {
+      ...styles.container,
+    },
+    progressSection: {
+      ...styles.progressSection,
+      padding: isMobile ? '1rem 0' : '2rem 0',
+    },
+    progressContent: {
+      ...styles.progressContent,
+      padding: isMobile ? '0 1rem' : '0 2rem',
+    },
+    stepsContainer: {
+      ...styles.stepsContainer,
+      gap: isMobile ? '0' : undefined,
+    },
+    stepCircle: {
+      ...styles.stepCircle,
+      width: isMobile ? '40px' : '60px',
+      height: isMobile ? '40px' : '60px',
+    },
+    stepCircleActive: {
+      ...styles.stepCircleActive,
+      width: isMobile ? '40px' : '60px',
+      height: isMobile ? '40px' : '60px',
+    },
+    stepCircleComplete: {
+      ...styles.stepCircleComplete,
+      width: isMobile ? '40px' : '60px',
+      height: isMobile ? '40px' : '60px',
+    },
+    stepLabel: {
+      ...styles.stepLabel,
+      display: isMobile ? 'none' : 'block',
+    },
+    main: {
+      ...styles.main,
+      padding: isMobile ? '1rem 0.75rem' : '3rem 2rem',
+    },
+    contentWrapper: {
+      ...styles.contentWrapper,
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
+      gap: isMobile ? '1rem' : '3rem',
+    },
+    formColumn: {
+      ...styles.formColumn,
+      padding: isMobile ? '1rem' : '2.5rem',
+      borderRadius: isMobile ? '12px' : '16px',
+    },
+    stepHeading: {
+      ...styles.stepHeading,
+      fontSize: isMobile ? '1.35rem' : '2rem',
+    },
+    stepSubheading: {
+      ...styles.stepSubheading,
+      fontSize: isMobile ? '0.9rem' : '1.05rem',
+      marginBottom: isMobile ? '1.25rem' : '2rem',
+    },
+    formGrid: {
+      ...styles.formGrid,
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+      gap: isMobile ? '1rem' : '1.5rem',
+    },
+    paymentMethods: {
+      ...styles.paymentMethods,
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+      gap: isMobile ? '0.75rem' : '1rem',
+    },
+    cardRow: {
+      ...styles.cardRow,
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+      gap: isMobile ? '1rem' : '1.5rem',
+    },
+    reviewGrid: {
+      ...styles.reviewGrid,
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+    },
+    navigationButtons: {
+      ...styles.navigationButtons,
+      flexDirection: isMobile ? 'column-reverse' : 'row',
+      gap: isMobile ? '0.75rem' : '1rem',
+    },
+    backButton: {
+      ...styles.backButton,
+      width: isMobile ? '100%' : 'auto',
+    },
+    nextButton: {
+      ...styles.nextButton,
+      width: isMobile ? '100%' : 'auto',
+      marginLeft: isMobile ? 0 : 'auto',
+      justifyContent: 'center',
+    },
+    summaryColumn: {
+      ...styles.summaryColumn,
+      position: isMobile ? 'relative' : 'sticky',
+      order: isMobile ? -1 : undefined,
+    },
+    summaryCard: {
+      ...styles.summaryCard,
+      padding: isMobile ? '1rem' : '2rem',
+      borderRadius: isMobile ? '12px' : '16px',
+    },
+    summaryTitle: {
+      ...styles.summaryTitle,
+      fontSize: isMobile ? '1.15rem' : '1.5rem',
+      marginBottom: isMobile ? '1rem' : '1.5rem',
+    },
+    hotelSummary: {
+      ...styles.hotelSummary,
+      flexDirection: isMobile ? 'row' : 'row',
+      gap: isMobile ? '0.75rem' : '1rem',
+    },
+    hotelImage: {
+      ...styles.hotelImage,
+      width: isMobile ? '80px' : '100px',
+      height: isMobile ? '80px' : '100px',
+    },
+    hotelName: {
+      ...styles.hotelName,
+      fontSize: isMobile ? '0.95rem' : '1.1rem',
+    },
+    totalRow: {
+      ...styles.totalRow,
+      fontSize: isMobile ? '1.25rem' : '1.5rem',
+    },
+    trustBadges: {
+      ...styles.trustBadges,
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+      gap: isMobile ? '0.5rem' : '0.75rem',
+    },
+    trustBadge: {
+      ...styles.trustBadge,
+      flexDirection: isMobile ? 'row' : 'column',
+      justifyContent: isMobile ? 'center' : undefined,
+      padding: isMobile ? '0.5rem' : undefined,
+    },
+  };
+
   return (
-    <div style={styles.container}>
+    <div style={responsiveStyles.container}>
       {/* Progress Bar */}
-      <div style={styles.progressSection}>
-        <div style={styles.progressContent}>
-          <div style={styles.stepsContainer}>
+      <div style={responsiveStyles.progressSection}>
+        <div style={responsiveStyles.progressContent}>
+          <div style={responsiveStyles.stepsContainer}>
             {steps.map((step, index) => (
               <React.Fragment key={step.number}>
                 <div style={styles.stepItem}>
                   <div style={
                     currentStep > step.number
-                      ? styles.stepCircleComplete
+                      ? responsiveStyles.stepCircleComplete
                       : currentStep === step.number
-                      ? styles.stepCircleActive
-                      : styles.stepCircle
+                      ? responsiveStyles.stepCircleActive
+                      : responsiveStyles.stepCircle
                   }>
                     {currentStep > step.number ? (
-                      <Check size={20} />
+                      <Check size={isMobile ? 16 : 20} />
                     ) : (
-                      step.icon
+                      React.cloneElement(step.icon, { size: isMobile ? 16 : 20 })
                     )}
                   </div>
-                  <div style={styles.stepLabel}>
+                  <div style={responsiveStyles.stepLabel}>
                     <div style={styles.stepNumber}>Step {step.number}</div>
                     <div style={styles.stepTitle}>{step.title}</div>
                   </div>
@@ -306,17 +455,17 @@ const Checkout = () => {
       </div>
 
       {/* Main Content */}
-      <div style={styles.main}>
-        <div style={styles.contentWrapper} className="contentWrapper">
+      <div style={responsiveStyles.main}>
+        <div style={responsiveStyles.contentWrapper} className="contentWrapper">
           {/* Left Column - Form */}
-          <div style={styles.formColumn}>
+          <div style={responsiveStyles.formColumn}>
             {/* Step 1: Guest Details */}
             {currentStep === 1 && (
               <div style={styles.stepContent}>
-                <h2 style={styles.stepHeading}>Guest Information</h2>
-                <p style={styles.stepSubheading}>Who's checking in?</p>
+                <h2 style={responsiveStyles.stepHeading}>Guest Information</h2>
+                <p style={responsiveStyles.stepSubheading}>Who's checking in?</p>
 
-                <div style={styles.formGrid}>
+                <div style={responsiveStyles.formGrid}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>
                       <User size={16} color="#10b981" />
@@ -381,11 +530,11 @@ const Checkout = () => {
             {/* Step 2: Payment */}
             {currentStep === 2 && (
               <div style={styles.stepContent}>
-                <h2 style={styles.stepHeading}>Payment Information</h2>
-                <p style={styles.stepSubheading}>Secure payment processing</p>
+                <h2 style={responsiveStyles.stepHeading}>Payment Information</h2>
+                <p style={responsiveStyles.stepSubheading}>Secure payment processing</p>
 
                 {/* Payment Method Selection */}
-                <div style={styles.paymentMethods}>
+                <div style={responsiveStyles.paymentMethods}>
                   <button
                     type="button"
                     onClick={() => setFormData({...formData, paymentMethod: 'card'})}
@@ -448,7 +597,7 @@ const Checkout = () => {
                       {errors.cardName && <div style={styles.error}>{errors.cardName}</div>}
                     </div>
 
-                    <div style={styles.cardRow}>
+                    <div style={responsiveStyles.cardRow}>
                       <div style={styles.formGroup}>
                         <label style={styles.label}>
                           <Calendar size={16} color="#10b981" />
@@ -520,7 +669,7 @@ const Checkout = () => {
                 <div style={styles.billingSection}>
                   <h3 style={styles.sectionTitle}>Billing Address</h3>
 
-                  <div style={styles.formGrid}>
+                  <div style={responsiveStyles.formGrid}>
                     <div style={{...styles.formGroup, gridColumn: '1 / -1'}}>
                       <label style={styles.label}>
                         <MapPin size={16} color="#10b981" />
@@ -584,13 +733,13 @@ const Checkout = () => {
             {/* Step 3: Review & Confirm */}
             {currentStep === 3 && (
               <div style={styles.stepContent}>
-                <h2 style={styles.stepHeading}>Review Your Booking</h2>
-                <p style={styles.stepSubheading}>Please verify all details before confirming</p>
+                <h2 style={responsiveStyles.stepHeading}>Review Your Booking</h2>
+                <p style={responsiveStyles.stepSubheading}>Please verify all details before confirming</p>
 
                 {/* Booking Summary */}
                 <div style={styles.reviewSection}>
                   <h3 style={styles.reviewTitle}>Booking Details</h3>
-                  <div style={styles.reviewGrid}>
+                  <div style={responsiveStyles.reviewGrid}>
                     <div style={styles.reviewItem}>
                       <div style={styles.reviewLabel}>Hotel</div>
                       <div style={styles.reviewValue}>{hotel?.name}</div>
@@ -625,7 +774,7 @@ const Checkout = () => {
                 {/* Guest Info Summary */}
                 <div style={styles.reviewSection}>
                   <h3 style={styles.reviewTitle}>Guest Information</h3>
-                  <div style={styles.reviewGrid}>
+                  <div style={responsiveStyles.reviewGrid}>
                     <div style={styles.reviewItem}>
                       <div style={styles.reviewLabel}>Name</div>
                       <div style={styles.reviewValue}>{formData.guestName}</div>
@@ -717,11 +866,11 @@ const Checkout = () => {
             )}
 
             {/* Navigation Buttons */}
-            <div style={styles.navigationButtons}>
+            <div style={responsiveStyles.navigationButtons}>
               {currentStep > 1 && (
                 <button
                   onClick={handleBack}
-                  style={styles.backButton}
+                  style={responsiveStyles.backButton}
                   className="back-btn"
                 >
                   Back
@@ -731,7 +880,7 @@ const Checkout = () => {
               {currentStep < 3 ? (
                 <button
                   onClick={handleNext}
-                  style={styles.nextButton}
+                  style={responsiveStyles.nextButton}
                   className="next-btn"
                 >
                   Continue
@@ -761,19 +910,19 @@ const Checkout = () => {
           </div>
 
           {/* Right Column - Booking Summary */}
-          <div style={styles.summaryColumn}>
-            <div style={styles.summaryCard}>
-              <h3 style={styles.summaryTitle}>Booking Summary</h3>
+          <div style={responsiveStyles.summaryColumn}>
+            <div style={responsiveStyles.summaryCard}>
+              <h3 style={responsiveStyles.summaryTitle}>Booking Summary</h3>
 
               {/* Hotel Info */}
-              <div style={styles.hotelSummary}>
+              <div style={responsiveStyles.hotelSummary}>
                 <img
                   src={hotel?.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&h=200&fit=crop'}
                   alt={hotel?.name}
-                  style={styles.hotelImage}
+                  style={responsiveStyles.hotelImage}
                 />
                 <div style={styles.hotelInfo}>
-                  <h4 style={styles.hotelName}>{hotel?.name}</h4>
+                  <h4 style={responsiveStyles.hotelName}>{hotel?.name}</h4>
                   <div style={styles.hotelLocation}>
                     <MapPin size={14} color="#6b7280" />
                     {hotel?.city || hotel?.location}
@@ -875,23 +1024,23 @@ const Checkout = () => {
                   </>
                 )}
 
-                <div style={styles.totalRow}>
+                <div style={responsiveStyles.totalRow}>
                   <span>Total</span>
                   <span>${pricing.total?.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Trust Badges */}
-              <div style={styles.trustBadges}>
-                <div style={styles.trustBadge}>
+              <div style={responsiveStyles.trustBadges}>
+                <div style={responsiveStyles.trustBadge}>
                   <Shield size={18} color="#10b981" />
                   <span>Secure Payment</span>
                 </div>
-                <div style={styles.trustBadge}>
+                <div style={responsiveStyles.trustBadge}>
                   <Check size={18} color="#10b981" />
                   <span>Instant Confirmation</span>
                 </div>
-                <div style={styles.trustBadge}>
+                <div style={responsiveStyles.trustBadge}>
                   <Lock size={18} color="#10b981" />
                   <span>SSL Encrypted</span>
                 </div>
@@ -1607,10 +1756,35 @@ if (typeof document !== 'undefined') {
     @media (max-width: 1024px) {
       .contentWrapper {
         grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .contentWrapper {
+        padding: 0 !important;
       }
     }
   `;
   document.head.appendChild(style);
+}
+
+// Add responsive styles to the inline styles object
+const mobileStyles = `
+  @media (max-width: 768px) {
+    [style*="gridTemplateColumns: repeat(2, 1fr)"] {
+      grid-template-columns: 1fr !important;
+    }
+    [style*="gridTemplateColumns: repeat(3, 1fr)"] {
+      grid-template-columns: 1fr !important;
+    }
+  }
+`;
+
+if (typeof document !== 'undefined') {
+  const mobileStyle = document.createElement('style');
+  mobileStyle.textContent = mobileStyles;
+  document.head.appendChild(mobileStyle);
 }
 
 export default Checkout;

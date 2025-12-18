@@ -17,6 +17,7 @@ function Trips() {
   const [displayCount, setDisplayCount] = useState(12);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [darkMode, setDarkMode] = useState(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.darkMode || false;
@@ -31,6 +32,15 @@ function Trips() {
   const [activeTransport, setActiveTransport] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('price');
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Listen for dark mode changes
   useEffect(() => {
@@ -193,7 +203,7 @@ function Trips() {
       background: darkMode
         ? 'linear-gradient(135deg, #047857 0%, #065f46 50%, #064e3b 100%)'
         : 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
-      padding: '3rem 2rem',
+      padding: isMobile ? '1.5rem 1rem' : '3rem 2rem',
       position: 'relative',
       overflow: 'hidden',
     },
@@ -214,10 +224,10 @@ function Trips() {
     },
     heroHeader: {
       textAlign: 'center',
-      marginBottom: '2rem',
+      marginBottom: isMobile ? '1.25rem' : '2rem',
     },
     heroTitle: {
-      fontSize: '3rem',
+      fontSize: isMobile ? '1.5rem' : '3rem',
       fontWeight: '900',
       color: 'white',
       marginBottom: '0.5rem',
@@ -225,10 +235,10 @@ function Trips() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '0.75rem',
+      gap: isMobile ? '0.5rem' : '0.75rem',
     },
     heroSubtitle: {
-      fontSize: '1.15rem',
+      fontSize: isMobile ? '0.9rem' : '1.15rem',
       color: 'rgba(255,255,255,0.9)',
       fontWeight: '500',
     },
@@ -236,8 +246,8 @@ function Trips() {
     searchBox: {
       background: darkMode ? 'rgba(255,255,255,0.08)' : 'white',
       backdropFilter: 'blur(20px)',
-      borderRadius: '24px',
-      padding: '1.5rem',
+      borderRadius: isMobile ? '16px' : '24px',
+      padding: isMobile ? '1rem' : '1.5rem',
       boxShadow: darkMode
         ? '0 20px 60px rgba(0,0,0,0.4)'
         : '0 20px 60px rgba(0,0,0,0.15)',
@@ -245,17 +255,17 @@ function Trips() {
     },
     searchRow: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr auto',
-      gap: '1rem',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr auto',
+      gap: isMobile ? '0.75rem' : '1rem',
       alignItems: 'center',
     },
     searchInputGroup: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '0.375rem',
+      gap: isMobile ? '0.25rem' : '0.375rem',
     },
     searchLabel: {
-      fontSize: '0.75rem',
+      fontSize: isMobile ? '0.7rem' : '0.75rem',
       fontWeight: '700',
       color: darkMode ? '#9ca3af' : '#6b7280',
       textTransform: 'uppercase',
@@ -267,10 +277,10 @@ function Trips() {
     searchInputWrapper: {
       display: 'flex',
       alignItems: 'center',
-      gap: '0.75rem',
-      padding: '0.875rem 1rem',
+      gap: isMobile ? '0.5rem' : '0.75rem',
+      padding: isMobile ? '0.75rem' : '0.875rem 1rem',
       background: darkMode ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-      borderRadius: '14px',
+      borderRadius: isMobile ? '12px' : '14px',
       border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '2px solid #e5e7eb',
       transition: 'all 0.3s ease',
     },
@@ -279,54 +289,65 @@ function Trips() {
       border: 'none',
       outline: 'none',
       background: 'transparent',
-      fontSize: '1rem',
+      fontSize: isMobile ? '0.95rem' : '1rem',
       fontWeight: '600',
       color: darkMode ? '#f3f4f6' : '#1f2937',
+      minWidth: 0,
+      width: '100%',
     },
     searchButton: {
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: '0.5rem',
-      padding: '1rem 2.5rem',
-      borderRadius: '14px',
+      padding: isMobile ? '0.875rem 1.5rem' : '1rem 2.5rem',
+      borderRadius: isMobile ? '12px' : '14px',
       background: darkMode
         ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
         : 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
       color: 'white',
       border: 'none',
       fontWeight: '700',
-      fontSize: '1rem',
+      fontSize: isMobile ? '0.95rem' : '1rem',
       cursor: 'pointer',
       boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
       transition: 'all 0.3s ease',
-      height: '100%',
-      minHeight: '56px',
+      width: isMobile ? '100%' : 'auto',
+      minHeight: isMobile ? '48px' : '56px',
     },
     // Transport filters in search box
     transportRow: {
       display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      marginTop: '1.25rem',
-      paddingTop: '1.25rem',
+      alignItems: isMobile ? 'flex-start' : 'center',
+      flexDirection: isMobile ? 'column' : 'row',
+      gap: isMobile ? '0.75rem' : '1rem',
+      marginTop: isMobile ? '1rem' : '1.25rem',
+      paddingTop: isMobile ? '1rem' : '1.25rem',
       borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
       flexWrap: 'wrap',
     },
     transportLabel: {
-      fontSize: '0.85rem',
+      fontSize: isMobile ? '0.8rem' : '0.85rem',
       fontWeight: '600',
       color: darkMode ? '#9ca3af' : '#6b7280',
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
     },
+    transportChipContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: isMobile ? '0.5rem' : '1rem',
+      flexWrap: 'wrap',
+      flex: 1,
+    },
     transportChip: {
       display: 'flex',
       alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.625rem 1.25rem',
-      borderRadius: '12px',
-      fontSize: '0.9rem',
+      gap: isMobile ? '0.375rem' : '0.5rem',
+      padding: isMobile ? '0.5rem 0.875rem' : '0.625rem 1.25rem',
+      borderRadius: isMobile ? '10px' : '12px',
+      fontSize: isMobile ? '0.8rem' : '0.9rem',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
@@ -336,20 +357,20 @@ function Trips() {
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
-      padding: '0.625rem 1.25rem',
-      borderRadius: '12px',
-      fontSize: '0.9rem',
+      padding: isMobile ? '0.5rem 0.875rem' : '0.625rem 1.25rem',
+      borderRadius: isMobile ? '10px' : '12px',
+      fontSize: isMobile ? '0.8rem' : '0.9rem',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
-      marginLeft: 'auto',
+      marginLeft: isMobile ? '0' : 'auto',
       border: 'none',
       background: darkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
       color: '#ef4444',
     },
     // Popular Routes
     popularRoutes: {
-      display: 'flex',
+      display: isMobile ? 'none' : 'flex',
       alignItems: 'center',
       gap: '0.75rem',
       marginTop: '1.25rem',
@@ -382,16 +403,17 @@ function Trips() {
     mainContent: {
       maxWidth: '1400px',
       margin: '0 auto',
-      padding: '2rem',
+      padding: isMobile ? '1rem 0.75rem' : '2rem',
     },
     // Controls Bar
     controlsBar: {
       display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '2rem',
+      alignItems: isMobile ? 'stretch' : 'center',
+      marginBottom: isMobile ? '1rem' : '2rem',
       flexWrap: 'wrap',
-      gap: '1rem',
+      gap: isMobile ? '0.75rem' : '1rem',
     },
     controlsLeft: {
       display: 'flex',
@@ -399,10 +421,10 @@ function Trips() {
       gap: '1rem',
     },
     resultsBadge: {
-      padding: '0.75rem 1.25rem',
+      padding: isMobile ? '0.625rem 1rem' : '0.75rem 1.25rem',
       background: darkMode ? 'rgba(16, 185, 129, 0.15)' : '#f0fdf4',
       borderRadius: '12px',
-      fontSize: '0.9rem',
+      fontSize: isMobile ? '0.85rem' : '0.9rem',
       fontWeight: '600',
       color: darkMode ? '#10b981' : '#047857',
       display: 'flex',
@@ -412,10 +434,11 @@ function Trips() {
     controlsRight: {
       display: 'flex',
       alignItems: 'center',
-      gap: '1rem',
+      gap: isMobile ? '0.5rem' : '1rem',
+      justifyContent: isMobile ? 'space-between' : 'flex-end',
     },
     viewToggle: {
-      display: 'flex',
+      display: isMobile ? 'none' : 'flex',
       background: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
       borderRadius: '12px',
       padding: '0.25rem',
@@ -440,24 +463,25 @@ function Trips() {
       color: '#10b981',
     },
     sortSelect: {
-      padding: '0.75rem 1.25rem',
+      padding: isMobile ? '0.625rem 0.875rem' : '0.75rem 1.25rem',
       background: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
       border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '2px solid #e5e7eb',
       borderRadius: '12px',
-      fontSize: '0.95rem',
+      fontSize: isMobile ? '0.85rem' : '0.95rem',
       fontWeight: '600',
       color: darkMode ? '#e5e7eb' : '#1f2937',
       cursor: 'pointer',
       outline: 'none',
       boxShadow: darkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.05)',
+      flex: isMobile ? 1 : 'none',
     },
     // Trips Grid
     tripsGrid: {
       display: 'grid',
-      gridTemplateColumns: viewMode === 'grid'
-        ? 'repeat(auto-fill, minmax(400px, 1fr))'
-        : '1fr',
-      gap: '1.5rem',
+      gridTemplateColumns: isMobile ? '1fr' : (viewMode === 'grid'
+        ? 'repeat(auto-fill, minmax(380px, 1fr))'
+        : '1fr'),
+      gap: isMobile ? '1rem' : '1.5rem',
     },
     // Loading State
     loading: {
@@ -465,56 +489,57 @@ function Trips() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '6rem 2rem',
+      padding: isMobile ? '4rem 1rem' : '6rem 2rem',
       gap: '1.5rem',
     },
     loadingText: {
-      fontSize: '1.1rem',
+      fontSize: isMobile ? '1rem' : '1.1rem',
       fontWeight: '500',
       color: darkMode ? '#9ca3af' : '#6b7280',
+      textAlign: 'center',
     },
     // Empty State
     empty: {
       textAlign: 'center',
-      padding: '6rem 2rem',
+      padding: isMobile ? '3rem 1rem' : '6rem 2rem',
       background: darkMode ? 'rgba(255,255,255,0.03)' : 'white',
-      borderRadius: '24px',
+      borderRadius: isMobile ? '16px' : '24px',
       boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.08)',
     },
     emptyIcon: {
-      width: '120px',
-      height: '120px',
+      width: isMobile ? '80px' : '120px',
+      height: isMobile ? '80px' : '120px',
       background: darkMode ? 'rgba(16, 185, 129, 0.1)' : '#f0fdf4',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      margin: '0 auto 2rem',
+      margin: '0 auto 1.5rem',
     },
     emptyTitle: {
-      fontSize: '1.75rem',
+      fontSize: isMobile ? '1.25rem' : '1.75rem',
       fontWeight: '700',
       color: darkMode ? '#f3f4f6' : '#1f2937',
       marginBottom: '0.75rem',
     },
     emptyText: {
-      fontSize: '1.1rem',
+      fontSize: isMobile ? '0.95rem' : '1.1rem',
       color: darkMode ? '#9ca3af' : '#6b7280',
       marginBottom: '2rem',
       maxWidth: '500px',
-      margin: '0 auto 2rem auto',
+      margin: '0 auto 1.5rem auto',
     },
     emptyButton: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '0.5rem',
-      padding: '1rem 2rem',
+      padding: isMobile ? '0.875rem 1.5rem' : '1rem 2rem',
       borderRadius: '12px',
       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       color: 'white',
       border: 'none',
       fontWeight: '700',
-      fontSize: '1rem',
+      fontSize: isMobile ? '0.95rem' : '1rem',
       cursor: 'pointer',
       boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
       transition: 'all 0.3s ease',
@@ -523,27 +548,28 @@ function Trips() {
     loadMoreContainer: {
       display: 'flex',
       justifyContent: 'center',
-      marginTop: '3rem',
-      marginBottom: '2rem',
+      marginTop: isMobile ? '2rem' : '3rem',
+      marginBottom: isMobile ? '1rem' : '2rem',
     },
     loadMoreButton: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       gap: '0.5rem',
-      padding: '1.25rem 3rem',
+      padding: isMobile ? '1rem 2rem' : '1.25rem 3rem',
       borderRadius: '16px',
       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       color: 'white',
       border: 'none',
       fontWeight: '700',
-      fontSize: '1.1rem',
+      fontSize: isMobile ? '1rem' : '1.1rem',
       cursor: 'pointer',
       boxShadow: '0 8px 24px rgba(16, 185, 129, 0.4)',
       transition: 'all 0.3s ease',
+      width: isMobile ? '100%' : 'auto',
     },
     loadMoreCount: {
-      fontSize: '0.9rem',
+      fontSize: isMobile ? '0.8rem' : '0.9rem',
       fontWeight: '500',
       opacity: 0.9,
     },

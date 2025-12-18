@@ -11,6 +11,16 @@ const HeroSection = ({ darkMode }) => {
   const [quickSuggestions, setQuickSuggestions] = useState([]);
   const [liveStats, setLiveStats] = useState({ hotels: 0, bookings: 0, travelers: 0 });
   const [trendingDestinations, setTrendingDestinations] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Popular quick search destinations
   const popularDestinations = [
@@ -91,6 +101,10 @@ const HeroSection = ({ darkMode }) => {
     <section
       style={{
         ...styles.hero,
+        padding: isMobile ? '1.5rem 0.75rem' : '2rem',
+        minHeight: isMobile ? 'auto' : '100vh',
+        paddingTop: isMobile ? '2rem' : '2rem',
+        paddingBottom: isMobile ? '2rem' : '2rem',
         background: darkMode
           ? 'radial-gradient(ellipse at top, #0a0a1a 0%, #050510 50%, #000000 100%)'
           : 'linear-gradient(to bottom, #a8d5e2 0%, #b8dfe8 20%, #d4e9f2 50%, #e8f4f8 80%, #f5f9fc 100%)',
@@ -161,23 +175,43 @@ const HeroSection = ({ darkMode }) => {
         </div>
       )}
 
-      <div style={styles.heroContent}>
+      <div style={{
+        ...styles.heroContent,
+        padding: isMobile ? '0 0.5rem' : 0,
+      }}>
         {/* Live Stats Bar */}
-        <div style={styles.statsBar}>
-          <div className="scroll-reveal" style={styles.statItem}>
-            <TrendingUp size={20} color="#10b981" />
+        <div style={{
+          ...styles.statsBar,
+          gap: isMobile ? '0.75rem' : '3rem',
+          marginBottom: isMobile ? '1.5rem' : '2rem',
+          flexDirection: isMobile ? 'column' : 'row',
+        }}>
+          <div className="scroll-reveal" style={{
+            ...styles.statItem,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <TrendingUp size={isMobile ? 16 : 20} color="#10b981" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>
               <strong>{liveStats.hotels}+</strong> Hotels
             </span>
           </div>
-          <div className="scroll-reveal" style={styles.statItem}>
-            <Zap size={20} color="#f59e0b" />
+          <div className="scroll-reveal" style={{
+            ...styles.statItem,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <Zap size={isMobile ? 16 : 20} color="#f59e0b" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>
               <strong>{liveStats.bookings}+</strong> Bookings Today
             </span>
           </div>
-          <div className="scroll-reveal" style={styles.statItem}>
-            <Users size={20} color="#8b5cf6" />
+          <div className="scroll-reveal" style={{
+            ...styles.statItem,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <Users size={isMobile ? 16 : 20} color="#8b5cf6" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>
               <strong>{liveStats.travelers}+</strong> Happy Travelers
             </span>
@@ -185,8 +219,14 @@ const HeroSection = ({ darkMode }) => {
         </div>
 
         {/* Epic Paradise Title */}
-        <div className="paradise-title-container" style={styles.titleContainer}>
-          <h1 className="paradise-title" style={styles.paradiseTitle}>
+        <div className="paradise-title-container" style={{
+          ...styles.titleContainer,
+          marginBottom: isMobile ? '1rem' : '1.5rem',
+        }}>
+          <h1 className="paradise-title" style={{
+            ...styles.paradiseTitle,
+            fontSize: isMobile ? '2.5rem' : '6.5rem',
+          }}>
             <span className="word-line">House of</span>
             <span className="word-paradise">
               Paradise
@@ -195,7 +235,7 @@ const HeroSection = ({ darkMode }) => {
           </h1>
 
           <div className="paradise-particles">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(isMobile ? 10 : 20)].map((_, i) => (
               <div
                 key={i}
                 className="particle"
@@ -210,42 +250,85 @@ const HeroSection = ({ darkMode }) => {
           </div>
         </div>
 
-        <p style={styles.heroSubtitle}>
+        <p style={{
+          ...styles.heroSubtitle,
+          fontSize: isMobile ? '1rem' : '1.5rem',
+          marginBottom: isMobile ? '1.5rem' : '3rem',
+        }}>
           Discover <span className="luxury-word">luxury</span> destinations worldwide
         </p>
 
         {/* Powerful Search Bar */}
-        <div style={styles.searchContainer}>
+        <div style={{
+          ...styles.searchContainer,
+          marginBottom: isMobile ? '2rem' : '3rem',
+          padding: isMobile ? '0 0.5rem' : 0,
+        }}>
           <div
             style={{
               ...styles.enhancedSearchBar,
+              background: darkMode ? '#1e293b' : 'white',
+              border: darkMode ? '2px solid rgba(16, 185, 129, 0.3)' : '2px solid rgba(16, 185, 129, 0.2)',
               boxShadow: isSearchFocused
-                ? '0 30px 80px rgba(16, 185, 129, 0.3)'
-                : '0 20px 60px rgba(0,0,0,0.15)',
+                ? darkMode
+                  ? '0 30px 80px rgba(16, 185, 129, 0.25), 0 0 20px rgba(16, 185, 129, 0.15)'
+                  : '0 30px 80px rgba(16, 185, 129, 0.3)'
+                : darkMode
+                  ? '0 20px 60px rgba(0,0,0,0.4)'
+                  : '0 20px 60px rgba(0,0,0,0.15)',
               transform: isSearchFocused ? 'scale(1.02)' : 'scale(1)',
+              flexDirection: isMobile ? 'column' : 'row',
+              padding: isMobile ? '1rem' : '0.75rem',
+              gap: isMobile ? '0.75rem' : '0',
+              borderRadius: isMobile ? '16px' : '20px',
             }}
             className="spotlight-card"
           >
-            <div style={styles.searchIconWrapper}>
+            <div style={{
+              ...styles.searchIconWrapper,
+              display: isMobile ? 'none' : 'flex',
+            }}>
               <Search size={24} color="#10b981" />
             </div>
-            <input
-              type="text"
-              placeholder="Where would you like to go? (e.g., Paris, Tokyo, Beach Resort...)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              style={{
-                ...styles.searchInput,
-                background: darkMode ? '#1f2937' : 'transparent',
-                color: darkMode ? '#fff' : '#1f2937',
-              }}
-            />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              flex: 1,
+              width: isMobile ? '100%' : 'auto',
+              background: darkMode ? '#0f172a' : '#f9fafb',
+              borderRadius: isMobile ? '12px' : '10px',
+              padding: isMobile ? '0.75rem 1rem' : '0.5rem 0.75rem',
+              border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb',
+            }}>
+              {isMobile && <Search size={20} color="#10b981" />}
+              <input
+                type="text"
+                placeholder={isMobile ? "Where to?" : "Where would you like to go? (e.g., Paris, Tokyo, Beach Resort...)"}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                style={{
+                  ...styles.searchInput,
+                  background: 'transparent',
+                  color: darkMode ? '#f1f5f9' : '#1f2937',
+                  fontSize: isMobile ? '1rem' : '1.1rem',
+                  padding: isMobile ? '0.5rem 0' : '1rem 0.5rem',
+                }}
+              />
+            </div>
             <button
               onClick={() => handleSearch()}
-              style={styles.enhancedSearchButton}
+              style={{
+                ...styles.enhancedSearchButton,
+                width: isMobile ? '100%' : 'auto',
+                padding: isMobile ? '0.875rem 1.5rem' : '1rem 2.5rem',
+                borderRadius: isMobile ? '12px' : '14px',
+                fontSize: isMobile ? '1rem' : '1.05rem',
+                justifyContent: 'center',
+              }}
               className="clickable search-btn-glow"
             >
               <Search size={20} />
@@ -255,17 +338,26 @@ const HeroSection = ({ darkMode }) => {
         </div>
 
         {/* Quick Destination Cards */}
-        <div style={styles.quickDestinations}>
+        <div style={{
+          ...styles.quickDestinations,
+          marginBottom: isMobile ? '2rem' : '3rem',
+          display: isMobile ? 'none' : 'block',
+        }}>
           <p style={{ ...styles.quickLabel, color: darkMode ? '#9ca3af' : '#6b7280' }}>
             Popular Destinations
           </p>
-          <div style={styles.destinationCards}>
+          <div style={{
+            ...styles.destinationCards,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: isMobile ? '0.75rem' : '1rem',
+          }}>
             {popularDestinations.map((dest, index) => (
               <div
                 key={index}
                 className="scroll-reveal spotlight-card hover-lift clickable"
                 style={{
                   ...styles.destinationCard,
+                  height: isMobile ? '90px' : '120px',
                   background: darkMode ? '#1a1a2e' : '#ffffff',
                   backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url(${dest.image})`,
                   backgroundSize: 'cover',
@@ -274,8 +366,14 @@ const HeroSection = ({ darkMode }) => {
                 onClick={() => handleQuickSearch(dest.name)}
               >
                 <div style={styles.destinationOverlay}>
-                  <span style={styles.destinationFlag}>{dest.flag}</span>
-                  <span style={styles.destinationName}>{dest.name}</span>
+                  <span style={{
+                    ...styles.destinationFlag,
+                    fontSize: isMobile ? '1.75rem' : '2.5rem',
+                  }}>{dest.flag}</span>
+                  <span style={{
+                    ...styles.destinationName,
+                    fontSize: isMobile ? '0.9rem' : '1.1rem',
+                  }}>{dest.name}</span>
                 </div>
               </div>
             ))}
@@ -283,17 +381,33 @@ const HeroSection = ({ darkMode }) => {
         </div>
 
         {/* Trust Badges */}
-        <div style={styles.trustBadges}>
-          <div className="scroll-reveal" style={styles.badge}>
-            <Star size={16} color="#f59e0b" fill="#f59e0b" />
+        <div style={{
+          ...styles.trustBadges,
+          gap: isMobile ? '0.75rem' : '2rem',
+          flexDirection: isMobile ? 'column' : 'row',
+        }}>
+          <div className="scroll-reveal" style={{
+            ...styles.badge,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <Star size={isMobile ? 14 : 16} color="#f59e0b" fill="#f59e0b" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>4.8/5 Rating</span>
           </div>
-          <div className="scroll-reveal" style={styles.badge}>
-            <Users size={16} color="#10b981" />
+          <div className="scroll-reveal" style={{
+            ...styles.badge,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <Users size={isMobile ? 14 : 16} color="#10b981" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>2M+ Travelers</span>
           </div>
-          <div className="scroll-reveal" style={styles.badge}>
-            <Zap size={16} color="#8b5cf6" />
+          <div className="scroll-reveal" style={{
+            ...styles.badge,
+            padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+          }}>
+            <Zap size={isMobile ? 14 : 16} color="#8b5cf6" />
             <span style={{ color: darkMode ? '#fff' : '#1f2937' }}>Instant Booking</span>
           </div>
         </div>

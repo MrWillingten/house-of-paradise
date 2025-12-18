@@ -62,6 +62,17 @@ function HotelDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
@@ -187,7 +198,7 @@ function HotelDetail() {
     { id: 3, name: 'Emily K.', rating: 5, date: '1 month ago', comment: 'Perfect getaway! The spa was incredible and the restaurant served amazing food. Highly recommend!', avatar: 'E' },
   ];
 
-  const styles = getStyles(darkMode);
+  const styles = getStyles(darkMode, isMobile);
 
   if (loading) {
     return (
@@ -803,7 +814,7 @@ function HotelDetail() {
   );
 }
 
-const getStyles = (darkMode) => ({
+const getStyles = (darkMode, isMobile = false) => ({
   pageContainer: {
     minHeight: '100vh',
     background: darkMode
@@ -845,20 +856,20 @@ const getStyles = (darkMode) => ({
     justifyContent: 'center',
     minHeight: '100vh',
     textAlign: 'center',
-    padding: '2rem',
+    padding: isMobile ? '1rem' : '2rem',
     background: darkMode
       ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
       : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
   },
   errorTitle: {
-    fontSize: '1.75rem',
+    fontSize: isMobile ? '1.5rem' : '1.75rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     marginBottom: '0.5rem',
   },
   errorText: {
     color: darkMode ? '#94a3b8' : '#64748b',
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '1rem' : '1.1rem',
     marginBottom: '1.5rem',
   },
   errorButton: {
@@ -881,7 +892,7 @@ const getStyles = (darkMode) => ({
   },
   mainImageContainer: {
     position: 'relative',
-    height: '500px',
+    height: isMobile ? '280px' : '500px',
     overflow: 'hidden',
   },
   mainImage: {
@@ -904,8 +915,8 @@ const getStyles = (darkMode) => ({
     transform: 'translateY(-50%)',
     background: 'rgba(255,255,255,0.9)',
     border: 'none',
-    width: '48px',
-    height: '48px',
+    width: isMobile ? '40px' : '48px',
+    height: isMobile ? '40px' : '48px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
@@ -918,32 +929,32 @@ const getStyles = (darkMode) => ({
   },
   imageCounter: {
     position: 'absolute',
-    bottom: '1.5rem',
+    bottom: isMobile ? '1rem' : '1.5rem',
     left: '50%',
     transform: 'translateX(-50%)',
     background: 'rgba(0,0,0,0.7)',
     color: 'white',
-    padding: '0.5rem 1rem',
+    padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
     borderRadius: '20px',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.8rem' : '0.9rem',
     fontWeight: '500',
   },
   backButton: {
     position: 'absolute',
-    top: '1.5rem',
-    left: '1.5rem',
+    top: isMobile ? '1rem' : '1.5rem',
+    left: isMobile ? '1rem' : '1.5rem',
     background: 'rgba(255,255,255,0.95)',
     border: 'none',
-    padding: '0.75rem 1.25rem',
+    padding: isMobile ? '0.5rem 0.875rem' : '0.75rem 1.25rem',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
     cursor: 'pointer',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.85rem' : '0.95rem',
     fontWeight: '600',
     color: '#1e293b',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -952,17 +963,17 @@ const getStyles = (darkMode) => ({
   },
   actionButtons: {
     position: 'absolute',
-    top: '1.5rem',
-    right: '1.5rem',
+    top: isMobile ? '1rem' : '1.5rem',
+    right: isMobile ? '1rem' : '1.5rem',
     display: 'flex',
-    gap: '0.75rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
     zIndex: 10,
   },
   actionBtn: {
     background: 'rgba(0,0,0,0.5)',
     border: '2px solid rgba(255,255,255,0.3)',
-    width: '44px',
-    height: '44px',
+    width: isMobile ? '40px' : '44px',
+    height: isMobile ? '40px' : '44px',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
@@ -977,43 +988,44 @@ const getStyles = (darkMode) => ({
   },
   propertyBadge: {
     position: 'absolute',
-    bottom: '1.5rem',
-    left: '1.5rem',
+    bottom: isMobile ? '1rem' : '1.5rem',
+    left: isMobile ? '1rem' : '1.5rem',
     background: 'rgba(255,255,255,0.95)',
-    padding: '0.5rem 1rem',
+    padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.8rem' : '0.9rem',
     fontWeight: '600',
     color: '#1e293b',
     textTransform: 'capitalize',
   },
   ratingBadge: {
     position: 'absolute',
-    bottom: '1.5rem',
-    right: '1.5rem',
+    bottom: isMobile ? '1rem' : '1.5rem',
+    right: isMobile ? '1rem' : '1.5rem',
     background: 'rgba(255,255,255,0.95)',
-    padding: '0.5rem 1rem',
+    padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
   },
   ratingValue: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '1rem' : '1.1rem',
     fontWeight: '700',
     color: '#1e293b',
   },
   reviewCount: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.75rem' : '0.85rem',
     color: '#64748b',
+    display: isMobile ? 'none' : 'inline',
   },
 
   // Thumbnails
   thumbnailStrip: {
-    display: 'flex',
+    display: isMobile ? 'none' : 'flex',
     gap: '0.75rem',
     padding: '1rem 1.5rem',
     background: darkMode ? '#1e293b' : 'white',
@@ -1059,44 +1071,47 @@ const getStyles = (darkMode) => ({
   mainContent: {
     maxWidth: '1400px',
     margin: '0 auto',
-    padding: '2rem 1.5rem 4rem',
+    padding: isMobile ? '1rem 0.75rem 2rem' : '2rem 1.5rem 4rem',
   },
   contentGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 400px',
-    gap: '2rem',
+    display: isMobile ? 'flex' : 'grid',
+    flexDirection: isMobile ? 'column' : undefined,
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
+    gap: isMobile ? '1rem' : '2rem',
     alignItems: 'start',
   },
   leftColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.5rem',
+    gap: isMobile ? '1rem' : '1.5rem',
+    order: isMobile ? 2 : 1,
   },
   rightColumn: {
-    position: 'sticky',
-    top: '2rem',
+    position: isMobile ? 'relative' : 'sticky',
+    top: isMobile ? 'auto' : '2rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.5rem',
+    gap: isMobile ? '1rem' : '1.5rem',
+    order: isMobile ? 1 : 2,
   },
 
   // Hotel Header
   hotelHeader: {
     background: darkMode ? '#1e293b' : 'white',
-    borderRadius: '20px',
-    padding: '2rem',
+    borderRadius: isMobile ? '16px' : '20px',
+    padding: isMobile ? '1rem' : '2rem',
     boxShadow: darkMode
       ? '0 4px 20px rgba(0,0,0,0.3)'
       : '0 4px 20px rgba(0,0,0,0.08)',
   },
   headerTop: {
-    marginBottom: '1.5rem',
+    marginBottom: isMobile ? '1rem' : '1.5rem',
   },
   hotelName: {
-    fontSize: '2rem',
+    fontSize: isMobile ? '1.35rem' : '2rem',
     fontWeight: '800',
     color: darkMode ? '#f1f5f9' : '#1e293b',
-    marginBottom: '0.75rem',
+    marginBottom: isMobile ? '0.5rem' : '0.75rem',
     lineHeight: 1.2,
   },
   locationRow: {
@@ -1111,7 +1126,7 @@ const getStyles = (darkMode) => ({
   },
   locationText: {
     color: darkMode ? '#94a3b8' : '#64748b',
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
   },
   locationDivider: {
     color: darkMode ? '#475569' : '#cbd5e1',
@@ -1119,26 +1134,26 @@ const getStyles = (darkMode) => ({
   },
   countryText: {
     color: darkMode ? '#94a3b8' : '#64748b',
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
   },
   quickStats: {
     display: 'flex',
-    gap: '1rem',
+    gap: isMobile ? '0.5rem' : '1rem',
     flexWrap: 'wrap',
   },
   statItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.875rem 1.25rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
+    padding: isMobile ? '0.625rem 0.875rem' : '0.875rem 1.25rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '12px',
-    flex: 1,
-    minWidth: '140px',
+    flex: isMobile ? '1 1 calc(50% - 0.25rem)' : 1,
+    minWidth: isMobile ? 'auto' : '140px',
   },
   statIcon: {
-    width: '40px',
-    height: '40px',
+    width: isMobile ? '32px' : '40px',
+    height: isMobile ? '32px' : '40px',
     borderRadius: '10px',
     background: darkMode
       ? 'linear-gradient(135deg, #334155 0%, #1e293b 100%)'
@@ -1153,37 +1168,40 @@ const getStyles = (darkMode) => ({
     flexDirection: 'column',
   },
   statValue: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '0.95rem' : '1.1rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
   },
   statLabel: {
-    fontSize: '0.8rem',
+    fontSize: isMobile ? '0.7rem' : '0.8rem',
     color: darkMode ? '#64748b' : '#94a3b8',
   },
 
   // Tabs
   tabsContainer: {
     display: 'flex',
-    gap: '0.5rem',
+    gap: isMobile ? '0.25rem' : '0.5rem',
     background: darkMode ? '#1e293b' : 'white',
-    padding: '0.5rem',
-    borderRadius: '16px',
+    padding: isMobile ? '0.375rem' : '0.5rem',
+    borderRadius: isMobile ? '12px' : '16px',
     boxShadow: darkMode
       ? '0 4px 20px rgba(0,0,0,0.3)'
       : '0 4px 20px rgba(0,0,0,0.08)',
+    overflowX: isMobile ? 'auto' : 'visible',
+    WebkitOverflowScrolling: 'touch',
   },
   tab: {
-    flex: 1,
-    padding: '0.875rem 1.5rem',
+    flex: isMobile ? 'none' : 1,
+    padding: isMobile ? '0.625rem 0.75rem' : '0.875rem 1.5rem',
     border: 'none',
     background: 'transparent',
-    borderRadius: '12px',
-    fontSize: '0.95rem',
+    borderRadius: isMobile ? '10px' : '12px',
+    fontSize: isMobile ? '0.8rem' : '0.95rem',
     fontWeight: '600',
     color: darkMode ? '#94a3b8' : '#64748b',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap',
   },
   tabActive: {
     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -1193,69 +1211,71 @@ const getStyles = (darkMode) => ({
   // Sections
   section: {
     background: darkMode ? '#1e293b' : 'white',
-    borderRadius: '20px',
-    padding: '2rem',
+    borderRadius: isMobile ? '16px' : '20px',
+    padding: isMobile ? '1rem' : '2rem',
     boxShadow: darkMode
       ? '0 4px 20px rgba(0,0,0,0.3)'
       : '0 4px 20px rgba(0,0,0,0.08)',
   },
   sectionHeader: {
     display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.5rem',
+    alignItems: isMobile ? 'flex-start' : 'center',
+    gap: isMobile ? '0.75rem' : 0,
+    marginBottom: isMobile ? '1rem' : '1.5rem',
   },
   sectionTitle: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-    fontSize: '1.35rem',
+    fontSize: isMobile ? '1.1rem' : '1.35rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
-    marginBottom: '1.5rem',
+    marginBottom: isMobile ? '1rem' : '1.5rem',
   },
   sectionIcon: {
     color: '#10b981',
   },
   description: {
     color: darkMode ? '#94a3b8' : '#64748b',
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
     lineHeight: 1.7,
-    marginBottom: '2rem',
+    marginBottom: isMobile ? '1.5rem' : '2rem',
   },
   showMoreBtn: {
     background: 'transparent',
     border: 'none',
     color: '#10b981',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.85rem' : '0.95rem',
     fontWeight: '600',
     cursor: 'pointer',
   },
   noContent: {
     color: darkMode ? '#64748b' : '#94a3b8',
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
     textAlign: 'center',
-    padding: '2rem',
+    padding: isMobile ? '1.5rem' : '2rem',
   },
 
   // Highlights
   highlights: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '1rem',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: isMobile ? '0.75rem' : '1rem',
   },
   highlight: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: '1rem',
-    padding: '1.25rem',
+    gap: isMobile ? '0.75rem' : '1rem',
+    padding: isMobile ? '1rem' : '1.25rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '12px',
     border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
   },
   highlightIcon: {
-    width: '48px',
-    height: '48px',
+    width: isMobile ? '40px' : '48px',
+    height: isMobile ? '40px' : '48px',
     borderRadius: '12px',
     background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%)',
     display: 'flex',
@@ -1266,13 +1286,13 @@ const getStyles = (darkMode) => ({
   },
   highlightContent: {},
   highlightTitle: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.95rem' : '1rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     marginBottom: '0.25rem',
   },
   highlightText: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     color: darkMode ? '#94a3b8' : '#64748b',
     lineHeight: 1.5,
   },
@@ -1280,21 +1300,21 @@ const getStyles = (darkMode) => ({
   // Amenities
   amenitiesGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: '1rem',
+    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))',
+    gap: isMobile ? '0.5rem' : '1rem',
   },
   amenityItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.875rem 1rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
+    padding: isMobile ? '0.625rem 0.75rem' : '0.875rem 1rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '10px',
     border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
   },
   amenityIcon: {
-    width: '36px',
-    height: '36px',
+    width: isMobile ? '28px' : '36px',
+    height: isMobile ? '28px' : '36px',
     borderRadius: '8px',
     background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
     display: 'flex',
@@ -1304,7 +1324,7 @@ const getStyles = (darkMode) => ({
     flexShrink: 0,
   },
   amenityText: {
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.75rem' : '0.9rem',
     fontWeight: '500',
     color: darkMode ? '#e2e8f0' : '#374151',
   },
@@ -1312,21 +1332,24 @@ const getStyles = (darkMode) => ({
   // Reviews
   ratingSummary: {
     display: 'flex',
-    gap: '2rem',
-    padding: '1.5rem',
+    flexDirection: isMobile ? 'column' : 'row',
+    gap: isMobile ? '1rem' : '2rem',
+    padding: isMobile ? '1rem' : '1.5rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
-    borderRadius: '16px',
-    marginBottom: '2rem',
+    borderRadius: isMobile ? '12px' : '16px',
+    marginBottom: isMobile ? '1rem' : '2rem',
     flexWrap: 'wrap',
   },
   ratingOverall: {
     textAlign: 'center',
-    padding: '1rem 2rem',
-    borderRight: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+    padding: isMobile ? '0.75rem' : '1rem 2rem',
+    borderRight: isMobile ? 'none' : (darkMode ? '1px solid #334155' : '1px solid #e2e8f0'),
+    borderBottom: isMobile ? (darkMode ? '1px solid #334155' : '1px solid #e2e8f0') : 'none',
+    paddingBottom: isMobile ? '1rem' : undefined,
   },
   ratingBig: {
     display: 'block',
-    fontSize: '3rem',
+    fontSize: isMobile ? '2.25rem' : '3rem',
     fontWeight: '800',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     lineHeight: 1,
@@ -1339,7 +1362,7 @@ const getStyles = (darkMode) => ({
     marginBottom: '0.5rem',
   },
   ratingLabel: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     color: darkMode ? '#64748b' : '#94a3b8',
   },
   ratingBars: {
@@ -1352,10 +1375,10 @@ const getStyles = (darkMode) => ({
   ratingBar: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
   },
   ratingBarLabel: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     fontWeight: '600',
     color: darkMode ? '#94a3b8' : '#64748b',
     width: '20px',
@@ -1363,7 +1386,7 @@ const getStyles = (darkMode) => ({
   },
   ratingBarTrack: {
     flex: 1,
-    height: '8px',
+    height: isMobile ? '6px' : '8px',
     background: darkMode ? '#334155' : '#e2e8f0',
     borderRadius: '4px',
     overflow: 'hidden',
@@ -1376,10 +1399,10 @@ const getStyles = (darkMode) => ({
   reviewsList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: isMobile ? '0.75rem' : '1rem',
   },
   reviewCard: {
-    padding: '1.5rem',
+    padding: isMobile ? '1rem' : '1.5rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '12px',
     border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
@@ -1387,12 +1410,12 @@ const getStyles = (darkMode) => ({
   reviewHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
-    marginBottom: '1rem',
+    gap: isMobile ? '0.75rem' : '1rem',
+    marginBottom: isMobile ? '0.75rem' : '1rem',
   },
   reviewAvatar: {
-    width: '44px',
-    height: '44px',
+    width: isMobile ? '36px' : '44px',
+    height: isMobile ? '36px' : '44px',
     borderRadius: '50%',
     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     display: 'flex',
@@ -1400,19 +1423,19 @@ const getStyles = (darkMode) => ({
     justifyContent: 'center',
     color: 'white',
     fontWeight: '700',
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '0.95rem' : '1.1rem',
   },
   reviewMeta: {
     flex: 1,
   },
   reviewName: {
     display: 'block',
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
     fontWeight: '600',
     color: darkMode ? '#f1f5f9' : '#1e293b',
   },
   reviewDate: {
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.75rem' : '0.85rem',
     color: darkMode ? '#64748b' : '#94a3b8',
   },
   reviewRating: {
@@ -1421,9 +1444,9 @@ const getStyles = (darkMode) => ({
   },
   reviewComment: {
     color: darkMode ? '#94a3b8' : '#64748b',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.85rem' : '0.95rem',
     lineHeight: 1.6,
-    marginBottom: '1rem',
+    marginBottom: isMobile ? '0.75rem' : '1rem',
   },
   reviewActions: {
     display: 'flex',
@@ -1436,52 +1459,54 @@ const getStyles = (darkMode) => ({
     background: 'transparent',
     border: 'none',
     color: darkMode ? '#64748b' : '#94a3b8',
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     cursor: 'pointer',
   },
 
   // Location
   mapPlaceholder: {
-    height: '250px',
+    height: isMobile ? '180px' : '250px',
     background: darkMode
       ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
       : 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-    borderRadius: '16px',
+    borderRadius: isMobile ? '12px' : '16px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: '2rem',
+    marginBottom: isMobile ? '1rem' : '2rem',
     border: darkMode ? '2px dashed #334155' : '2px dashed #cbd5e1',
   },
   mapTitle: {
-    fontSize: '1.25rem',
+    fontSize: isMobile ? '1.1rem' : '1.25rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     marginTop: '1rem',
     marginBottom: '0.25rem',
+    textAlign: 'center',
+    padding: '0 1rem',
   },
   mapSubtitle: {
     color: darkMode ? '#64748b' : '#94a3b8',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.85rem' : '0.95rem',
   },
   nearbyPlaces: {},
   nearbyTitle: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '1rem' : '1.1rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
-    marginBottom: '1rem',
+    marginBottom: isMobile ? '0.75rem' : '1rem',
   },
   nearbyGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '1rem',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+    gap: isMobile ? '0.5rem' : '1rem',
   },
   nearbyItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '1rem',
+    gap: isMobile ? '0.625rem' : '0.75rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '10px',
     border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
@@ -1491,28 +1516,28 @@ const getStyles = (darkMode) => ({
   },
   nearbyName: {
     display: 'block',
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.85rem' : '0.9rem',
     fontWeight: '600',
     color: darkMode ? '#e2e8f0' : '#374151',
   },
   nearbyDistance: {
-    fontSize: '0.8rem',
+    fontSize: isMobile ? '0.75rem' : '0.8rem',
     color: darkMode ? '#64748b' : '#94a3b8',
   },
 
   // Booking Card
   bookingCard: {
     background: darkMode ? '#1e293b' : 'white',
-    borderRadius: '20px',
-    padding: '1.5rem',
+    borderRadius: isMobile ? '16px' : '20px',
+    padding: isMobile ? '1rem' : '1.5rem',
     boxShadow: darkMode
       ? '0 4px 20px rgba(0,0,0,0.4)'
       : '0 8px 30px rgba(0,0,0,0.12)',
     border: darkMode ? '1px solid #334155' : '1px solid rgba(16, 185, 129, 0.2)',
   },
   priceHeader: {
-    marginBottom: '1.5rem',
-    paddingBottom: '1.5rem',
+    marginBottom: isMobile ? '1rem' : '1.5rem',
+    paddingBottom: isMobile ? '1rem' : '1.5rem',
     borderBottom: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
   },
   priceMain: {
@@ -1522,7 +1547,7 @@ const getStyles = (darkMode) => ({
     marginBottom: '0.5rem',
   },
   priceAmount: {
-    fontSize: '2.25rem',
+    fontSize: isMobile ? '1.75rem' : '2.25rem',
     fontWeight: '800',
     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     WebkitBackgroundClip: 'text',
@@ -1530,14 +1555,14 @@ const getStyles = (darkMode) => ({
     backgroundClip: 'text',
   },
   priceUnit: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.9rem' : '1rem',
     color: darkMode ? '#94a3b8' : '#64748b',
   },
   priceCompare: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.375rem',
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     color: '#10b981',
     fontWeight: '500',
   },
@@ -1546,70 +1571,74 @@ const getStyles = (darkMode) => ({
   bookingForm: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: isMobile ? '0.75rem' : '1rem',
   },
   dateInputs: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0.75rem',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gap: isMobile ? '0.625rem' : '0.75rem',
   },
   dateInput: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap: isMobile ? '0.375rem' : '0.5rem',
   },
   inputLabel: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.375rem',
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     fontWeight: '600',
     color: darkMode ? '#94a3b8' : '#64748b',
   },
   input: {
-    padding: '0.875rem',
+    padding: isMobile ? '0.75rem' : '0.875rem',
     border: darkMode ? '2px solid #334155' : '2px solid #e2e8f0',
     borderRadius: '10px',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.9rem' : '0.95rem',
     fontWeight: '500',
     background: darkMode ? '#0f172a' : '#f8fafc',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     outline: 'none',
     transition: 'all 0.2s ease',
+    width: '100%',
+    boxSizing: 'border-box',
   },
   guestInputs: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '0.75rem',
+    gap: isMobile ? '0.625rem' : '0.75rem',
   },
   guestInput: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap: isMobile ? '0.375rem' : '0.5rem',
   },
   select: {
-    padding: '0.875rem',
+    padding: isMobile ? '0.75rem' : '0.875rem',
     border: darkMode ? '2px solid #334155' : '2px solid #e2e8f0',
     borderRadius: '10px',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.9rem' : '0.95rem',
     fontWeight: '500',
     background: darkMode ? '#0f172a' : '#f8fafc',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     outline: 'none',
     cursor: 'pointer',
+    width: '100%',
+    boxSizing: 'border-box',
   },
   priceBreakdown: {
-    padding: '1.25rem',
+    padding: isMobile ? '1rem' : '1.25rem',
     background: darkMode ? '#0f172a' : '#f8fafc',
     borderRadius: '12px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
   },
   priceRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.85rem' : '0.95rem',
     color: darkMode ? '#94a3b8' : '#64748b',
   },
   priceDivider: {
@@ -1620,7 +1649,7 @@ const getStyles = (darkMode) => ({
   priceTotal: {
     display: 'flex',
     justifyContent: 'space-between',
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '1rem' : '1.1rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
   },
@@ -1635,16 +1664,17 @@ const getStyles = (darkMode) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.75rem',
-    padding: '1.1rem',
+    padding: isMobile ? '1rem' : '1.1rem',
     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '12px',
-    fontSize: '1.05rem',
+    fontSize: isMobile ? '1rem' : '1.05rem',
     fontWeight: '700',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+    width: '100%',
   },
   bookButtonDisabled: {
     background: darkMode ? '#334155' : '#e2e8f0',
@@ -1656,72 +1686,74 @@ const getStyles = (darkMode) => ({
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    padding: '0.75rem 1rem',
+    padding: isMobile ? '0.625rem 0.875rem' : '0.75rem 1rem',
     background: darkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     border: '1px solid #fca5a5',
     borderRadius: '10px',
     color: '#dc2626',
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.8rem' : '0.9rem',
     fontWeight: '600',
-    marginBottom: '0.75rem',
+    marginBottom: isMobile ? '0.5rem' : '0.75rem',
   },
   assurances: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.625rem',
-    paddingTop: '1rem',
+    gap: isMobile ? '0.5rem' : '0.625rem',
+    paddingTop: isMobile ? '0.75rem' : '1rem',
   },
   assurance: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    fontSize: '0.85rem',
+    fontSize: isMobile ? '0.8rem' : '0.85rem',
     color: darkMode ? '#94a3b8' : '#64748b',
   },
   offerBanner: {
-    marginTop: '1.25rem',
-    padding: '1rem',
+    marginTop: isMobile ? '1rem' : '1.25rem',
+    padding: isMobile ? '0.875rem' : '1rem',
     background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
     borderRadius: '12px',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: isMobile ? '0.5rem' : '0.75rem',
     color: '#10b981',
     border: '1px solid rgba(16, 185, 129, 0.3)',
+    fontSize: isMobile ? '0.85rem' : '1rem',
   },
 
   // Help Card
   helpCard: {
     background: darkMode ? '#1e293b' : 'white',
-    borderRadius: '16px',
-    padding: '1.5rem',
+    borderRadius: isMobile ? '12px' : '16px',
+    padding: isMobile ? '1rem' : '1.5rem',
     textAlign: 'center',
     boxShadow: darkMode
       ? '0 4px 20px rgba(0,0,0,0.3)'
       : '0 4px 20px rgba(0,0,0,0.08)',
+    display: isMobile ? 'none' : 'block',
   },
   helpIcon: {
     color: '#10b981',
     marginBottom: '0.75rem',
   },
   helpTitle: {
-    fontSize: '1.1rem',
+    fontSize: isMobile ? '1rem' : '1.1rem',
     fontWeight: '700',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     marginBottom: '0.25rem',
   },
   helpText: {
-    fontSize: '0.9rem',
+    fontSize: isMobile ? '0.85rem' : '0.9rem',
     color: darkMode ? '#64748b' : '#94a3b8',
     marginBottom: '1rem',
   },
   helpButton: {
     width: '100%',
-    padding: '0.875rem',
+    padding: isMobile ? '0.75rem' : '0.875rem',
     background: 'transparent',
     border: darkMode ? '2px solid #334155' : '2px solid #e2e8f0',
     borderRadius: '10px',
-    fontSize: '0.95rem',
+    fontSize: isMobile ? '0.9rem' : '0.95rem',
     fontWeight: '600',
     color: darkMode ? '#f1f5f9' : '#1e293b',
     cursor: 'pointer',
