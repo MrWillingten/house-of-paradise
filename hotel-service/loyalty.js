@@ -2,17 +2,24 @@ const mongoose = require('mongoose');
 
 // ==================== LOYALTY PROGRAM SCHEMAS ====================
 
-// Loyalty Tiers Configuration
+// Loyalty Tiers Configuration - 10 Creative Tier Benefits
 const TIERS = {
   EXPLORER: {
     name: 'Explorer',
+    badge: '🧭',
     minBookings: 0,
     minSpend: 0,
     benefits: [
       '5% discount on select properties',
       'Priority customer support',
       'Early access to flash sales',
-      'Welcome bonus: 500 points'
+      'Welcome bonus: 500 points',
+      'Member-only newsletter with travel tips',
+      'Access to community forums',
+      'Birthday greeting email',
+      'Free cancellation within 24 hours',
+      'Exclusive mobile app features',
+      'Travel inspiration recommendations'
     ],
     color: '#CD7F32',
     discount: 5,
@@ -20,15 +27,20 @@ const TIERS = {
   },
   ADVENTURER: {
     name: 'Adventurer',
+    badge: '⚔️',
     minBookings: 5,
     minSpend: 2000,
     benefits: [
-      '10% discount on select properties',
-      'Free room upgrades (subject to availability)',
-      'Late check-out',
-      'Welcome drink',
-      'Priority support 24/7',
-      'Double points on weekends'
+      '10% discount on all properties',
+      'Free room upgrades when available',
+      'Late check-out until 2 PM',
+      'Welcome drink at partner hotels',
+      'Priority 24/7 support hotline',
+      'Double points on weekend stays',
+      'Free Wi-Fi upgrade to premium',
+      'Early booking access (48h head start)',
+      'Monthly surprise reward drops',
+      'Exclusive partner discounts (20+ brands)'
     ],
     color: '#C0C0C0',
     discount: 10,
@@ -36,17 +48,20 @@ const TIERS = {
   },
   GLOBETROTTER: {
     name: 'Globetrotter',
+    badge: '🌍',
     minBookings: 15,
     minSpend: 5000,
     benefits: [
       '15% discount on all properties',
-      'Guaranteed room upgrade',
-      'Free breakfast',
-      'Late check-out until 2 PM',
-      'Airport lounge access',
-      'Dedicated account manager',
-      'Birthday bonus: 500 points',
-      'Triple points on all bookings'
+      'Guaranteed room upgrade (1 category)',
+      'Free daily breakfast for two',
+      'Flexible check-out until 4 PM',
+      'Airport lounge access (2x/year)',
+      'Dedicated travel concierge',
+      'Birthday bonus: 1,000 points',
+      'Triple points on all bookings',
+      'Free airport transfers (select cities)',
+      'VIP event invitations & experiences'
     ],
     color: '#FFD700',
     discount: 15,
@@ -54,22 +69,24 @@ const TIERS = {
   },
   ELITE: {
     name: 'Paradise Elite',
+    badge: '👑',
     minBookings: 30,
     minSpend: 10000,
     benefits: [
-      '20% discount on all properties',
-      'Guaranteed best room',
-      'Free breakfast & dinner',
-      'Flexible cancellation',
-      '24h check-out',
-      'Exclusive luxury properties access',
-      'Concierge service',
-      'Annual free night',
-      'Quadruple points on all bookings'
+      '25% discount on all properties',
+      'Guaranteed best available room',
+      'Complimentary breakfast & dinner',
+      'Fully flexible cancellation policy',
+      'No check-out time restrictions',
+      'Exclusive luxury collection access',
+      'Personal butler service on request',
+      'Annual complimentary 3-night stay',
+      '5x points on all bookings',
+      'Private jet & yacht partner discounts'
     ],
     color: '#E5E4E2',
-    discount: 20,
-    pointsMultiplier: 4.0
+    discount: 25,
+    pointsMultiplier: 5.0
   }
 };
 

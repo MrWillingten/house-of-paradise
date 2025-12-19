@@ -201,6 +201,9 @@ export const adminService = {
 
   // Stats
   getStats: () => api.get('/api/admin/stats'),
+
+  // Analytics
+  getAnalytics: (days = 7) => api.get('/api/admin/analytics', { params: { days } }),
 };
 
 export default api;

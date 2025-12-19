@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api, { authService } from '../services/api';
 import {
   User, Mail, Lock, Shield, Phone, Trash2, AlertCircle, Check, X,
-  Loader, Edit2, Key, Smartphone, QrCode, Copy, Eye, EyeOff, Globe, ChevronDown, Search, Download
+  Loader, Edit2, Key, Smartphone, QrCode, Copy, Eye, EyeOff, Globe, ChevronDown, Search, Download, Gift
 } from 'lucide-react';
 import ProfileImageUpload from '../components/ProfileImageUpload';
 import { countries, validatePhoneNumber } from '../utils/countries';
@@ -98,6 +98,12 @@ function Account() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [accountActionPassword, setAccountActionPassword] = useState('');
   const [accountActionError, setAccountActionError] = useState('');
+
+  // Redeem Referral Code State
+  const [referralCode, setReferralCode] = useState('');
+  const [referralError, setReferralError] = useState('');
+  const [referralSuccess, setReferralSuccess] = useState('');
+  const [isRedeemingCode, setIsRedeemingCode] = useState(false);
 
   // Success Banner State
   const [successMessage, setSuccessMessage] = useState('');
@@ -580,6 +586,39 @@ Do NOT share these codes with anyone.
     showSuccess('Backup codes downloaded successfully!');
   };
 
+  // Redeem Referral Code Handler
+  const handleRedeemReferralCode = async (e) => {
+    e.preventDefault();
+    setReferralError('');
+    setReferralSuccess('');
+
+    if (!referralCode.trim()) {
+      setReferralError('Please enter a referral code');
+      return;
+    }
+
+    setIsRedeemingCode(true);
+
+    try {
+      const response = await api.post('/api/loyalty/redeem-code', {
+        referralCode: referralCode.trim().toUpperCase(),
+        userId: user?.id
+      });
+
+      if (response.data.success) {
+        setReferralSuccess(response.data.message || 'Referral code redeemed successfully!');
+        setReferralCode('');
+        showSuccess(`Referral code redeemed! You earned ${response.data.data?.pointsEarned || 500} bonus points!`);
+      } else {
+        setReferralError(response.data.message || 'Failed to redeem referral code');
+      }
+    } catch (error) {
+      setReferralError(error.response?.data?.message || 'Failed to redeem referral code. Please try again.');
+    } finally {
+      setIsRedeemingCode(false);
+    }
+  };
+
   // Account Action Handlers
   const handleDisableAccount = async (e) => {
     e.preventDefault();
@@ -1059,7 +1098,126 @@ Do NOT share these codes with anyone.
                 background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
               }} />
 
-              {/* 8. Account Removal */}
+              {/* 8. Redeem Referral Code */}
+              <div style={styles.section}>
+                <h2 style={{
+                  ...styles.sectionHeader,
+                  color: darkMode ? '#ffffff' : '#1f2937'
+                }}>
+                  <Gift size={22} style={{ marginRight: '8px' }} />
+                  Redeem Referral Code
+                </h2>
+                <p style={{
+                  fontSize: '0.9rem',
+                  color: darkMode ? '#9ca3af' : '#6b7280',
+                  marginBottom: '16px',
+                  lineHeight: '1.5'
+                }}>
+                  Have a friend's referral code? Enter it below to earn bonus loyalty points!
+                </p>
+                <form onSubmit={handleRedeemReferralCode} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => {
+                        setReferralCode(e.target.value.toUpperCase());
+                        setReferralError('');
+                        setReferralSuccess('');
+                      }}
+                      placeholder="Enter referral code (e.g., ABCD1234)"
+                      style={{
+                        ...styles.input,
+                        flex: 1,
+                        minWidth: '200px',
+                        background: darkMode ? '#0f0f1a' : '#ffffff',
+                        color: darkMode ? '#ffffff' : '#1f2937',
+                        border: `2px solid ${referralError ? '#ef4444' : darkMode ? '#2a2a3e' : '#e5e7eb'}`,
+                        textTransform: 'uppercase',
+                        letterSpacing: '2px',
+                        fontWeight: '600'
+                      }}
+                      maxLength={12}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isRedeemingCode || !referralCode.trim()}
+                      style={{
+                        ...styles.actionButton,
+                        background: isRedeemingCode || !referralCode.trim()
+                          ? darkMode ? 'rgba(107, 114, 128, 0.2)' : 'rgba(107, 114, 128, 0.1)'
+                          : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: isRedeemingCode || !referralCode.trim()
+                          ? darkMode ? '#6b7280' : '#9ca3af'
+                          : '#ffffff',
+                        border: 'none',
+                        opacity: isRedeemingCode || !referralCode.trim() ? 0.7 : 1,
+                        cursor: isRedeemingCode || !referralCode.trim() ? 'not-allowed' : 'pointer',
+                        minWidth: '120px'
+                      }}
+                    >
+                      {isRedeemingCode ? (
+                        <Loader size={18} className="spin" />
+                      ) : (
+                        <Gift size={18} />
+                      )}
+                      <span>{isRedeemingCode ? 'Redeeming...' : 'Redeem'}</span>
+                    </button>
+                  </div>
+
+                  {referralError && (
+                    <div style={{
+                      ...styles.errorText,
+                      background: darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`
+                    }}>
+                      <X size={16} color="#ef4444" />
+                      <span>{referralError}</span>
+                    </div>
+                  )}
+
+                  {referralSuccess && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${darkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`,
+                      color: '#10b981',
+                      fontSize: '0.9rem'
+                    }}>
+                      <Check size={16} color="#10b981" />
+                      <span>{referralSuccess}</span>
+                    </div>
+                  )}
+
+                  <div style={{
+                    ...styles.infoBox,
+                    background: darkMode ? 'rgba(14, 165, 233, 0.1)' : 'rgba(14, 165, 233, 0.05)',
+                    border: `1px solid ${darkMode ? 'rgba(14, 165, 233, 0.3)' : 'rgba(14, 165, 233, 0.2)'}`
+                  }}>
+                    <AlertCircle size={18} color="#0ea5e9" />
+                    <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                      You can only redeem one referral code per account. Both you and your friend will earn bonus points!
+                    </span>
+                  </div>
+                </form>
+              </div>
+
+              <div style={{
+                ...styles.divider,
+                background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+              }} />
+
+              {/* 9. Account Removal */}
               <div style={styles.section}>
                 <h2 style={{
                   ...styles.sectionHeader,

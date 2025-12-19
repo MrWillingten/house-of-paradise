@@ -41,6 +41,8 @@ function AdminDashboard() {
   const [trips, setTrips] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsDays, setAnalyticsDays] = useState(7);
 
   // Search and filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -170,11 +172,12 @@ function AdminDashboard() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [statsRes, usersRes, hotelsRes, tripsRes] = await Promise.all([
+      const [statsRes, usersRes, hotelsRes, tripsRes, analyticsRes] = await Promise.all([
         adminService.getStats().catch(() => ({ data: { data: {} } })),
         adminService.getAllUsers().catch(() => ({ data: { data: [] } })),
         hotelService.getAll().catch(() => ({ data: { data: [] } })),
-        tripService.getAll().catch(() => ({ data: { data: [] } }))
+        tripService.getAll().catch(() => ({ data: { data: [] } })),
+        adminService.getAnalytics(analyticsDays).catch(() => ({ data: { data: null } }))
       ]);
 
       const allUsers = usersRes.data?.data || [];
@@ -191,11 +194,22 @@ function AdminDashboard() {
       setUsers(allUsers);
       setHotels(hotelsRes.data?.data || []);
       setTrips(tripsRes.data?.data || []);
+      setAnalytics(analyticsRes.data?.data || null);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load some data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch analytics when days change
+  const fetchAnalytics = async (days) => {
+    try {
+      const res = await adminService.getAnalytics(days);
+      setAnalytics(res.data?.data || null);
+    } catch (err) {
+      console.error('Error fetching analytics:', err);
     }
   };
 
@@ -306,10 +320,25 @@ function AdminDashboard() {
   const handleSaveTrip = async (e) => {
     e.preventDefault();
     try {
+      // Format datetime-local values to ISO format for Java LocalDateTime
+      const formatDateTime = (dateTimeStr) => {
+        if (!dateTimeStr) return null;
+        // datetime-local gives format: "2024-12-20T10:30"
+        // Java LocalDateTime expects: "2024-12-20T10:30:00"
+        return dateTimeStr.includes(':') && dateTimeStr.split(':').length === 2
+          ? dateTimeStr + ':00'
+          : dateTimeStr;
+      };
+
       const payload = {
-        ...formData,
+        origin: formData.origin,
+        destination: formData.destination,
+        departureTime: formatDateTime(formData.departureTime),
+        arrivalTime: formatDateTime(formData.arrivalTime),
+        transportType: formData.transportType,
         price: Number(formData.price),
-        availableSeats: Number(formData.availableSeats)
+        availableSeats: Number(formData.availableSeats),
+        carrier: formData.carrier || ''
       };
 
       if (editingItem) {
@@ -322,7 +351,8 @@ function AdminDashboard() {
       setShowModal(false);
       fetchAllData();
     } catch (err) {
-      showNotification(err.response?.data?.error || 'Failed to save trip', 'error');
+      console.error('Trip save error:', err);
+      showNotification(err.response?.data?.error || err.response?.data?.message || 'Failed to save trip', 'error');
     }
   };
 
@@ -740,6 +770,117 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Activity Graph */}
+              <div style={styles.section}>
+                <div style={styles.sectionHeader}>
+                  <h2 style={styles.sectionTitle}>
+                    <TrendingUp size={20} />
+                    Activity Analytics
+                  </h2>
+                  <select
+                    value={analyticsDays}
+                    onChange={(e) => {
+                      const days = parseInt(e.target.value);
+                      setAnalyticsDays(days);
+                      fetchAnalytics(days);
+                    }}
+                    style={styles.periodSelect}
+                  >
+                    <option value={7}>Last 7 Days</option>
+                    <option value={14}>Last 14 Days</option>
+                    <option value={30}>Last 30 Days</option>
+                  </select>
+                </div>
+
+                {/* Summary Stats */}
+                {analytics && (
+                  <div style={styles.analyticsSummary}>
+                    <div style={styles.summaryCard}>
+                      <div style={styles.summaryNumber}>{analytics.summary?.totalActivity || 0}</div>
+                      <div style={styles.summaryLabel}>Total Activities</div>
+                    </div>
+                    <div style={styles.summaryCard}>
+                      <div style={styles.summaryNumber}>{analytics.summary?.uniqueActiveUsers || 0}</div>
+                      <div style={styles.summaryLabel}>Active Users</div>
+                    </div>
+                    <div style={styles.summaryCard}>
+                      <div style={styles.summaryNumber}>{analytics.byType?.login || 0}</div>
+                      <div style={styles.summaryLabel}>Logins</div>
+                    </div>
+                    <div style={styles.summaryCard}>
+                      <div style={styles.summaryNumber}>{analytics.byType?.registration || 0}</div>
+                      <div style={styles.summaryLabel}>Registrations</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Activity Chart */}
+                <div style={styles.chartContainer}>
+                  {analytics?.chartData && analytics.chartData.length > 0 ? (
+                    <div style={styles.chart}>
+                      <div style={styles.chartBars}>
+                        {analytics.chartData.map((day, index) => {
+                          const maxTotal = Math.max(...analytics.chartData.map(d => d.total), 1);
+                          const heightPercent = (day.total / maxTotal) * 100;
+                          return (
+                            <div key={day.date} style={styles.chartBarWrapper}>
+                              <div style={styles.chartBarContainer}>
+                                <div
+                                  style={{
+                                    ...styles.chartBar,
+                                    height: `${Math.max(heightPercent, 2)}%`,
+                                    background: day.total > 0
+                                      ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)'
+                                      : 'rgba(107, 114, 128, 0.3)'
+                                  }}
+                                  title={`${day.date}: ${day.total} activities\nLogins: ${day.login}\nRegistrations: ${day.registration}\nLogouts: ${day.logout}`}
+                                />
+                              </div>
+                              <div style={styles.chartLabel}>
+                                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
+                              </div>
+                              <div style={styles.chartValue}>{day.total}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={styles.noData}>
+                      <BarChart3 size={48} style={{ opacity: 0.3 }} />
+                      <p>No activity data yet. Activities will appear as users interact with the platform.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Activity Breakdown */}
+                {analytics?.byType && Object.keys(analytics.byType).length > 0 && (
+                  <div style={styles.activityBreakdown}>
+                    <h3 style={styles.breakdownTitle}>Activity Breakdown</h3>
+                    <div style={styles.breakdownGrid}>
+                      {Object.entries(analytics.byType).map(([type, count]) => (
+                        <div key={type} style={styles.breakdownItem}>
+                          <div style={styles.breakdownIcon}>
+                            {type === 'login' && <Lock size={16} />}
+                            {type === 'logout' && <LogOut size={16} />}
+                            {type === 'registration' && <UserCheck size={16} />}
+                            {type === 'booking' && <Calendar size={16} />}
+                            {type === 'payment' && <CreditCard size={16} />}
+                            {type === 'profile_update' && <Edit2 size={16} />}
+                            {type === 'page_view' && <Eye size={16} />}
+                            {type === 'search' && <Search size={16} />}
+                          </div>
+                          <div style={styles.breakdownInfo}>
+                            <div style={styles.breakdownType}>{type.replace('_', ' ')}</div>
+                            <div style={styles.breakdownCount}>{count}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* System Health */}
               <div style={styles.section}>
                 <h2 style={styles.sectionTitle}>
@@ -804,7 +945,11 @@ function AdminDashboard() {
                   {users.slice(0, 5).map(user => (
                     <div key={user._id} style={styles.recentItem}>
                       <div style={styles.recentAvatar}>
-                        {user.name?.charAt(0).toUpperCase() || '?'}
+                        {user.profileImage ? (
+                          <img src={user.profileImage} alt="" style={styles.recentAvatarImg} />
+                        ) : (
+                          user.name?.charAt(0).toUpperCase() || '?'
+                        )}
                       </div>
                       <div style={styles.recentInfo}>
                         <div style={styles.recentName}>{user.name}</div>
@@ -1833,6 +1978,14 @@ function getStyles(darkMode, isMobile = false) {
       padding: '1.5rem',
       border: `1px solid ${colors.border}`,
     },
+    sectionHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: '1.25rem',
+      flexWrap: 'wrap',
+      gap: '0.75rem',
+    },
     sectionTitle: {
       display: 'flex',
       alignItems: 'center',
@@ -1840,6 +1993,146 @@ function getStyles(darkMode, isMobile = false) {
       fontSize: '1.125rem',
       fontWeight: '600',
       marginBottom: '1.25rem',
+      color: colors.text,
+      margin: 0,
+    },
+    periodSelect: {
+      padding: '0.5rem 1rem',
+      background: colors.surfaceHover,
+      border: `1px solid ${colors.border}`,
+      borderRadius: '8px',
+      color: colors.text,
+      fontSize: '0.875rem',
+      cursor: 'pointer',
+      outline: 'none',
+    },
+
+    // Analytics
+    analyticsSummary: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+      gap: '1rem',
+      marginBottom: '1.5rem',
+    },
+    summaryCard: {
+      background: colors.surfaceHover,
+      borderRadius: '12px',
+      padding: '1rem',
+      textAlign: 'center',
+      border: `1px solid ${colors.border}`,
+    },
+    summaryNumber: {
+      fontSize: isMobile ? '1.5rem' : '2rem',
+      fontWeight: '700',
+      color: '#10b981',
+    },
+    summaryLabel: {
+      fontSize: '0.75rem',
+      color: colors.textSecondary,
+      marginTop: '0.25rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+    },
+    chartContainer: {
+      marginBottom: '1.5rem',
+    },
+    chart: {
+      background: colors.surfaceHover,
+      borderRadius: '12px',
+      padding: '1.5rem',
+      border: `1px solid ${colors.border}`,
+    },
+    chartBars: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      height: '200px',
+      gap: '8px',
+    },
+    chartBarWrapper: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '4px',
+      minWidth: isMobile ? '20px' : '30px',
+    },
+    chartBarContainer: {
+      height: '150px',
+      width: '100%',
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    chartBar: {
+      width: '100%',
+      maxWidth: '40px',
+      borderRadius: '4px 4px 0 0',
+      transition: 'height 0.3s ease',
+      cursor: 'pointer',
+    },
+    chartLabel: {
+      fontSize: '0.7rem',
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    chartValue: {
+      fontSize: '0.7rem',
+      color: colors.text,
+      fontWeight: '600',
+    },
+    noData: {
+      textAlign: 'center',
+      padding: '3rem',
+      color: colors.textSecondary,
+    },
+    activityBreakdown: {
+      background: colors.surfaceHover,
+      borderRadius: '12px',
+      padding: '1rem',
+      border: `1px solid ${colors.border}`,
+    },
+    breakdownTitle: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      marginBottom: '1rem',
+      color: colors.text,
+    },
+    breakdownGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+      gap: '0.75rem',
+    },
+    breakdownItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '0.75rem',
+      background: colors.surface,
+      borderRadius: '8px',
+      border: `1px solid ${colors.border}`,
+    },
+    breakdownIcon: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      borderRadius: '8px',
+      background: 'rgba(16, 185, 129, 0.15)',
+      color: '#10b981',
+    },
+    breakdownInfo: {
+      flex: 1,
+    },
+    breakdownType: {
+      fontSize: '0.75rem',
+      color: colors.textSecondary,
+      textTransform: 'capitalize',
+    },
+    breakdownCount: {
+      fontSize: '1rem',
+      fontWeight: '600',
       color: colors.text,
     },
 
@@ -1922,6 +2215,12 @@ function getStyles(darkMode, isMobile = false) {
       justifyContent: 'center',
       color: '#ffffff',
       fontWeight: '600',
+      overflow: 'hidden',
+    },
+    recentAvatarImg: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
     },
     recentInfo: {
       flex: 1,

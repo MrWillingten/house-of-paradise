@@ -1321,6 +1321,31 @@ app.get('/api/admin/stats', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// Admin Analytics endpoint
+app.get('/api/admin/analytics', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const response = await axios.get(`${AUTH_SERVICE}/api/admin/analytics`, {
+      headers: { Authorization: req.headers.authorization },
+      params: req.query
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+// Activity logging endpoint (for services to call)
+app.post('/api/activity/log', async (req, res) => {
+  try {
+    const response = await axios.post(`${AUTH_SERVICE}/api/activity/log`, req.body, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
 // Error handler
 function handleError(error, res) {
   console.error('Gateway error:', error.message);
@@ -1574,6 +1599,16 @@ app.post('/api/loyalty/referral/signup', browseLimiter, async (req, res) => {
 app.get('/api/loyalty/referral/:userId', verifyToken, async (req, res) => {
   try {
     const response = await axios.get(`${HOTEL_SERVICE}/api/loyalty/referral/${req.params.userId}`);
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+// Redeem a friend's referral code (protected)
+app.post('/api/loyalty/redeem-code', verifyToken, async (req, res) => {
+  try {
+    const response = await axios.post(`${HOTEL_SERVICE}/api/loyalty/redeem-code`, req.body);
     res.status(response.status).json(response.data);
   } catch (error) {
     handleError(error, res);

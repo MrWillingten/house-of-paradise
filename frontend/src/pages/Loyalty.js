@@ -548,11 +548,11 @@ function Loyalty() {
             </h2>
             <div style={styles.grid}>
               {Object.entries({
-                EXPLORER: 'Explorer',
-                ADVENTURER: 'Adventurer',
-                GLOBETROTTER: 'Globetrotter',
-                ELITE: 'Paradise Elite'
-              }).map(([key, name]) => {
+                EXPLORER: { name: 'Explorer', badge: '🧭' },
+                ADVENTURER: { name: 'Adventurer', badge: '⚔️' },
+                GLOBETROTTER: { name: 'Globetrotter', badge: '🌍' },
+                ELITE: { name: 'Paradise Elite', badge: '👑' }
+              }).map(([key, tierInfo]) => {
                 const tier = loyaltyProfile?.allTiers?.[key];
                 const isCurrent = loyaltyProfile?.currentTier === key;
                 const TierIconType = getTierIcon(key);
@@ -561,38 +561,105 @@ function Loyalty() {
                   <div key={key} style={{
                     ...styles.card,
                     border: isCurrent ? '2px solid #10b981' : styles.card.border,
-                    opacity: isCurrent ? 1 : 0.7
+                    opacity: isCurrent ? 1 : 0.85,
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}>
+                    {/* Premium Badge */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '-10px',
+                      right: '-10px',
+                      fontSize: '80px',
+                      opacity: 0.1,
+                      transform: 'rotate(15deg)'
+                    }}>
+                      {tierInfo.badge}
+                    </div>
+
                     <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
                       <div style={{
                         ...styles.tierIcon,
                         backgroundColor: getTierColor(key) + '20',
-                        width: '40px',
-                        height: '40px'
+                        width: '48px',
+                        height: '48px',
+                        position: 'relative'
                       }}>
-                        <TierIconType size={24} color={getTierColor(key)} />
+                        <span style={{fontSize: '24px'}}>{tierInfo.badge}</span>
                       </div>
                       <div>
                         <div style={{fontSize: '20px', fontWeight: '700', color: darkMode ? '#ffffff' : '#111827'}}>
-                          {name}
+                          {tierInfo.name}
                         </div>
                         {isCurrent && (
-                          <div style={{fontSize: '12px', color: '#10b981', fontWeight: '600'}}>
-                            CURRENT TIER
+                          <div style={{
+                            fontSize: '11px',
+                            color: '#ffffff',
+                            fontWeight: '700',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            padding: '2px 10px',
+                            borderRadius: '20px',
+                            display: 'inline-block'
+                          }}>
+                            ✓ CURRENT TIER
                           </div>
                         )}
                       </div>
                     </div>
-                    <div style={{fontSize: '14px', color: darkMode ? '#9ca3af' : '#6b7280', marginBottom: '16px'}}>
+                    <div style={{fontSize: '14px', color: darkMode ? '#9ca3af' : '#6b7280', marginBottom: '12px'}}>
                       {tier?.minBookings || 0}+ bookings • ${(tier?.minSpend || 0).toLocaleString()}+ spend
                     </div>
-                    <div style={{fontSize: '24px', fontWeight: '700', color: '#10b981', marginBottom: '16px'}}>
-                      {tier?.discount || 5}% Discount • {tier?.pointsMultiplier || 1}x Points
+                    <div style={{
+                      fontSize: '20px',
+                      fontWeight: '700',
+                      color: '#10b981',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      gap: '16px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        padding: '4px 12px',
+                        borderRadius: '8px'
+                      }}>
+                        {tier?.discount || 5}% OFF
+                      </span>
+                      <span style={{
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        padding: '4px 12px',
+                        borderRadius: '8px'
+                      }}>
+                        {tier?.pointsMultiplier || 1}x Points
+                      </span>
                     </div>
-                    <ul style={styles.benefitsList}>
-                      {tier?.benefits?.slice(0, 4).map((benefit, index) => (
-                        <li key={index} style={styles.benefitItem}>
-                          <Check size={14} color="#10b981" />
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: darkMode ? '#d1d5db' : '#374151',
+                      marginBottom: '12px'
+                    }}>
+                      {tier?.benefits?.length || 10} Premium Benefits:
+                    </div>
+                    <ul style={{...styles.benefitsList, maxHeight: '300px', overflowY: 'auto'}}>
+                      {(tier?.benefits || [
+                        '5% discount on select properties',
+                        'Priority customer support',
+                        'Early access to flash sales',
+                        'Welcome bonus: 500 points',
+                        'Member-only newsletter',
+                        'Access to community forums',
+                        'Birthday greeting email',
+                        'Free cancellation within 24h',
+                        'Exclusive mobile app features',
+                        'Travel recommendations'
+                      ]).map((benefit, index) => (
+                        <li key={index} style={{
+                          ...styles.benefitItem,
+                          padding: '8px 12px',
+                          marginBottom: '6px'
+                        }}>
+                          <Check size={14} color="#10b981" style={{flexShrink: 0}} />
                           <span style={{fontSize: '13px'}}>{benefit}</span>
                         </li>
                       ))}

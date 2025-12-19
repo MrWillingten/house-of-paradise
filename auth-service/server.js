@@ -336,6 +336,52 @@ tokenBlacklistSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const TokenBlacklist = mongoose.model('TokenBlacklist', tokenBlacklistSchema);
 
+// Activity Tracking Schema for Admin Analytics
+const activitySchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ['login', 'logout', 'booking', 'payment', 'page_view', 'search', 'like', 'comment', 'profile_update', 'registration'],
+    required: true,
+    index: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  details: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  ipAddress: String,
+  userAgent: String,
+  timestamp: {
+    type: Date,
+    default: Date.now,
+    index: true
+  }
+});
+
+// Auto-cleanup old activities (keep 90 days)
+activitySchema.index({ timestamp: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
+const Activity = mongoose.model('Activity', activitySchema);
+
+// Helper function to log activity
+async function logActivity(type, userId = null, details = {}, req = null) {
+  try {
+    await Activity.create({
+      type,
+      userId,
+      details,
+      ipAddress: req?.ip || req?.connection?.remoteAddress,
+      userAgent: req?.headers?.['user-agent']
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
+}
+
 // Multer Configuration for Profile Image Upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -1112,6 +1158,9 @@ app.post('/api/auth/register',
       // Send verification code (plain text via email)
       sendVerificationCode(email, code, 'email_verification');
 
+      // Log registration activity
+      await logActivity('registration', user._id, { email: user.email, name: user.name }, req);
+
       res.status(201).json({
         success: true,
         message: 'Registration successful. Please check your email for verification code.',
@@ -1403,6 +1452,9 @@ app.post('/api/auth/login',
       const userAgent = req.headers['user-agent'];
       const refreshToken = await generateRefreshToken(user._id, ipAddress, userAgent);
 
+      // Log successful login activity
+      await logActivity('login', user._id, { email: user.email }, req);
+
       res.json({
         success: true,
         message: 'Login successful',
@@ -1529,6 +1581,9 @@ app.post('/api/auth/logout',
       if (refreshToken) {
         await revokeRefreshToken(refreshToken);
       }
+
+      // Log logout activity
+      await logActivity('logout', req.user._id, { email: req.user.email }, req);
 
       res.json({
         success: true,
@@ -2086,12 +2141,13 @@ app.post('/api/auth/request-email-change',
       user.tempEmail = newEmail;
       await user.save();
 
-      // Send code to NEW email (plain text)
-      await sendVerificationCode(newEmail, code, 'email_verification');
+      // SECURITY: Send code to CURRENT email (not new email) to verify identity
+      // This ensures only the owner of the current account can change the email
+      await sendVerificationCode(user.email, code, 'email_verification');
 
       res.json({
         success: true,
-        message: 'Verification code sent to new email address'
+        message: 'Verification code sent to your current email address'
       });
 
     } catch (error) {
@@ -3257,9 +3313,19 @@ function isAdmin(req, res, next) {
 app.get('/api/admin/users', verifyToken, isAdmin, async (req, res) => {
   try {
     const users = await User.find().select('-password -passwordHistory -twoFactorSecret -backupCodes');
+
+    // Transform users to include full profile image URLs
+    const usersWithFullUrls = users.map(user => {
+      const userObj = user.toObject();
+      if (userObj.profileImage) {
+        userObj.profileImage = `${API_GATEWAY_URL}${userObj.profileImage}`;
+      }
+      return userObj;
+    });
+
     res.json({
       success: true,
-      data: users
+      data: usersWithFullUrls
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -3422,6 +3488,150 @@ app.get('/api/admin/stats', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch stats'
+    });
+  }
+});
+
+// Get activity analytics (admin only)
+app.get('/api/admin/analytics', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    const daysNum = Math.min(parseInt(days) || 7, 90);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysNum);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Get activity counts by type
+    const activityByType = await Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Get daily activity for the chart
+    const dailyActivity = await Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+            type: '$type'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.date': 1 } }
+    ]);
+
+    // Get hourly distribution (for last 24 hours)
+    const last24Hours = new Date();
+    last24Hours.setHours(last24Hours.getHours() - 24);
+
+    const hourlyActivity = await Activity.aggregate([
+      { $match: { timestamp: { $gte: last24Hours } } },
+      {
+        $group: {
+          _id: { $hour: '$timestamp' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Transform daily activity into chart-friendly format
+    const chartData = {};
+    const activityTypes = ['login', 'logout', 'registration', 'booking', 'payment', 'profile_update', 'page_view', 'search'];
+
+    // Initialize all days with zeros
+    for (let i = 0; i < daysNum; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      chartData[dateStr] = {
+        date: dateStr,
+        total: 0,
+        login: 0,
+        logout: 0,
+        registration: 0,
+        booking: 0,
+        payment: 0,
+        profile_update: 0,
+        page_view: 0,
+        search: 0
+      };
+    }
+
+    // Fill in actual data
+    dailyActivity.forEach(item => {
+      const dateStr = item._id.date;
+      const type = item._id.type;
+      if (chartData[dateStr]) {
+        chartData[dateStr][type] = item.count;
+        chartData[dateStr].total += item.count;
+      }
+    });
+
+    // Convert to array sorted by date
+    const chartDataArray = Object.values(chartData).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Total activity count
+    const totalActivity = await Activity.countDocuments({ timestamp: { $gte: startDate } });
+
+    // Unique active users
+    const uniqueUsers = await Activity.distinct('userId', {
+      timestamp: { $gte: startDate },
+      userId: { $ne: null }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalActivity,
+          uniqueActiveUsers: uniqueUsers.length,
+          period: `${daysNum} days`
+        },
+        byType: activityByType.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        chartData: chartDataArray,
+        hourlyDistribution: hourlyActivity.map(h => ({ hour: h._id, count: h.count }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch analytics'
+    });
+  }
+});
+
+// Log activity endpoint (for other services to call)
+app.post('/api/activity/log', async (req, res) => {
+  try {
+    const { type, userId, details } = req.body;
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Activity type is required'
+      });
+    }
+
+    await logActivity(type, userId, details, req);
+
+    res.json({
+      success: true,
+      message: 'Activity logged'
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to log activity'
     });
   }
 });

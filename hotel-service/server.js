@@ -1478,6 +1478,98 @@ app.get('/api/loyalty/referral/:userId', async (req, res) => {
   }
 });
 
+// Redeem a friend's referral code
+app.post('/api/loyalty/redeem-code', async (req, res) => {
+  try {
+    const { referralCode, userId } = req.body;
+
+    if (!referralCode || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Referral code and user ID are required'
+      });
+    }
+
+    // Find the user's loyalty profile
+    let userProfile = await LoyaltyProfile.findOne({ userId });
+
+    // Initialize profile if not exists
+    if (!userProfile) {
+      userProfile = await LoyaltyEngine.initializeProfile(userId);
+    }
+
+    // Check if user has already used a referral code
+    if (userProfile.referredBy) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already redeemed a referral code'
+      });
+    }
+
+    // Check if user is trying to use their own code
+    if (userProfile.referralCode === referralCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot use your own referral code'
+      });
+    }
+
+    // Find the referrer by their referral code
+    const referrer = await LoyaltyProfile.findOne({ referralCode: referralCode.toUpperCase() });
+
+    if (!referrer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid referral code. Please check and try again.'
+      });
+    }
+
+    // Award bonus points to the user who redeemed the code
+    const userBonusPoints = 500;
+    userProfile.availablePoints += userBonusPoints;
+    userProfile.lifetimePoints += userBonusPoints;
+    userProfile.referredBy = referralCode.toUpperCase();
+
+    userProfile.pointsHistory.push({
+      type: 'bonus',
+      amount: userBonusPoints,
+      reason: 'Referral code redeemed - Welcome bonus'
+    });
+
+    await userProfile.save();
+
+    // Award bonus points to the referrer
+    const referrerBonusPoints = 250;
+    referrer.availablePoints += referrerBonusPoints;
+    referrer.lifetimePoints += referrerBonusPoints;
+    referrer.referralStats.totalInvites += 1;
+    referrer.referralStats.totalEarned += referrerBonusPoints;
+
+    referrer.pointsHistory.push({
+      type: 'bonus',
+      amount: referrerBonusPoints,
+      reason: `Referral bonus - Friend redeemed your code`
+    });
+
+    await referrer.save();
+
+    res.json({
+      success: true,
+      message: `Referral code redeemed! You earned ${userBonusPoints} bonus points.`,
+      data: {
+        pointsEarned: userBonusPoints,
+        newBalance: userProfile.availablePoints
+      }
+    });
+  } catch (error) {
+    console.error('Error redeeming referral code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to redeem referral code. Please try again.'
+    });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`🏨 Hotel Service running on port ${PORT}`);
   console.log(`🔌 WebSocket server ready for real-time updates`);
